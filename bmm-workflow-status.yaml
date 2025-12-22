@@ -1,0 +1,75 @@
+# Workflow Status
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+
+generated: "2025-12-19T17:42:00+08:00"
+project: "CrewAgent"
+project_type: "greenfield"
+selected_track: "method"
+field_type: "greenfield"
+workflow_path: "_bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
+
+# Status Tracking with Discovery Workflows
+workflow_status:
+  # Phase 1: Discovery (Selected: All)
+  brainstorm:
+    id: "brainstorming"
+    status: "recommended" # User selected
+    path: "_bmad/core/workflows/brainstorming"
+    
+  research:
+    id: "research"
+    status: "recommended" # User selected
+    path: "_bmad/bmm/workflows/1-analysis/research"
+
+  product_brief:
+    status: completed
+    output_file: /Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/product-brief-CrewAgent-2025-12-20.md
+    completed_at: 2025-12-20
+
+  # Phase 2: Planning
+  prd:
+    id: "create-prd" 
+    required: true
+    status: complete
+    output: '_bmad-output/prd.md'
+    completion_date: '2025-12-21'
+    input_file: /Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/product-brief-CrewAgent-2025-12-20.md
+    path: "_bmad/bmm/workflows/2-plan-workflows/create-prd"
+
+  ux_design:
+    id: "create-ux-design"
+    status: complete
+    output: '_bmad-output/ux-design-specification.md'
+    completion_date: '2025-12-21'
+    artifacts:
+      - '_bmad-output/ux-color-themes.html'
+      - '_bmad-output/ux-design-directions.html'
+    path: "_bmad/bmm/workflows/2-plan-workflows/create-ux-design"
+
+  architecture:
+    id: "create-architecture"
+    status: complete
+    output: '_bmad-output/architecture.md'
+    completion_date: '2025-12-21'
+    path: "_bmad/bmm/workflows/3-solutioning/create-architecture"
+    
+  epics_stories:
+    id: "create-epics-and-stories"
+    status: complete
+    output: '_bmad-output/epics.md'
+    completion_date: '2025-12-21'
+    path: "_bmad/bmm/workflows/2-plan-workflows/create-epics-and-stories"
+
+  implementation_readiness:
+    id: "implementation-readiness"
+    status: complete
+    output: '_bmad-output/implementation-readiness-report-2025-12-21-v2.md'
+    completion_date: '2025-12-21'
+    path: "_bmad/bmm/workflows/3-solutioning/check-implementation-readiness"
+
+  sprint_planning:
+    id: "sprint-planning"
+    status: complete
+    output: '_bmad-output/implementation-artifacts/sprint-status.yaml'
+    completion_date: '2025-12-21'
+    path: "_bmad/bmm/workflows/4-implementation/sprint-planning"

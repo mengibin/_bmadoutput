@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CrewAgent - UX Color Themes</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --surface: #111a2e;
+        --surface-2: #0f172a;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: rgba(148, 163, 184, 0.2);
+        --primary: #6366f1;
+        --primary-2: #818cf8;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #38bdf8;
+        --focus: rgba(99, 102, 241, 0.45);
+      }
+
+      [data-mode="light"] {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --surface-2: #f1f5f9;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: rgba(15, 23, 42, 0.12);
+        --focus: rgba(99, 102, 241, 0.25);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--border);
+        padding: 18px 16px;
+        background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+      }
+
+      .brand {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: radial-gradient(circle at 30% 30%, var(--primary-2), var(--primary));
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      }
+
+      .brand h1 {
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.2;
+      }
+
+      .brand p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .group-title {
+        margin: 16px 0 8px;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .themes {
+        display: grid;
+        gap: 8px;
+      }
+
+      .theme-btn {
+        width: 100%;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        color: var(--text);
+        cursor: pointer;
+      }
+      .theme-btn:focus { outline: none; box-shadow: 0 0 0 4px var(--focus); }
+      .theme-btn:hover { border-color: rgba(99, 102, 241, 0.55); }
+
+      .swatches {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .swatch { width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.12); }
+      [data-mode="light"] .swatch { border: 1px solid rgba(15, 23, 42, 0.12); }
+
+      .toggle {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .main {
+        padding: 18px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        position: sticky;
+        top: 12px;
+        z-index: 10;
+      }
+
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        min-width: 280px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .btn-row { display: flex; gap: 10px; }
+      .btn {
+        padding: 9px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        color: var(--text);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .btn:hover { border-color: rgba(99, 102, 241, 0.55); }
+      .btn.primary {
+        background: linear-gradient(180deg, var(--primary-2), var(--primary));
+        border-color: rgba(99,102,241,0.75);
+      }
+      .btn.danger {
+        background: linear-gradient(180deg, rgba(239,68,68,0.9), rgba(239,68,68,0.7));
+        border-color: rgba(239,68,68,0.65);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 14px;
+      }
+
+      .card h2 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+
+      .muted { color: var(--muted); font-size: 12px; }
+
+      .kpis {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .kpi {
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+      }
+      .kpi .label { font-size: 11px; color: var(--muted); }
+      .kpi .value { font-size: 18px; margin-top: 6px; font-weight: 650; }
+
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .badge {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        font-size: 12px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 999px; }
+      .dot.success { background: var(--success); }
+      .dot.warning { background: var(--warning); }
+      .dot.danger { background: var(--danger); }
+      .dot.info { background: var(--info); }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 12px;
+      }
+      .table th, .table td {
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+      .table th { color: var(--muted); font-weight: 600; }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        width: 340px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        padding: 12px;
+        box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+      }
+      .toast strong { display: block; font-size: 12px; margin-bottom: 4px; }
+      .toast .hint { font-size: 12px; color: var(--muted); }
+
+      @media (max-width: 980px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { position: sticky; top: 0; z-index: 20; }
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body data-mode="dark" data-theme="indigo">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="logo"></div>
+          <div>
+            <h1>CrewAgent 主题预览</h1>
+            <p>语义色 + 组件示例</p>
+          </div>
+        </div>
+
+        <div class="pill">提示：点击主题后观察按钮/边框/警告色</div>
+
+        <div class="group-title">Theme</div>
+        <div class="themes" id="themes"></div>
+
+        <div class="group-title">Mode</div>
+        <div class="toggle">
+          <div class="muted">Light / Dark</div>
+          <div class="btn-row">
+            <button class="btn" id="lightBtn">Light</button>
+            <button class="btn" id="darkBtn">Dark</button>
+          </div>
+        </div>
+
+        <div class="group-title">Notes</div>
+        <div class="muted">
+          - 目标：高对比、低噪音、适配工程工具密度。<br />
+          - Primary 用于主行动（导出/执行）。<br />
+          - Success/Warning/Danger 用于可验证反馈与风险提示。<br />
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <div class="search">⌘K 搜索：Projects / Packages / Logs…</div>
+          <div class="btn-row">
+            <button class="btn">预览</button>
+            <button class="btn primary">执行</button>
+            <button class="btn danger">高风险</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <section class="card">
+            <h2>Runtime 执行概览</h2>
+            <div class="muted">步骤 / 日志 / 产物 统一呈现（Document-as-State 可视化）</div>
+            <div class="kpis">
+              <div class="kpi">
+                <div class="label">Steps</div>
+                <div class="value">12</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Artifacts</div>
+                <div class="value">27</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Warnings</div>
+                <div class="value">1</div>
+              </div>
+            </div>
+
+            <div class="status">
+              <div class="badge"><span class="dot success"></span>已完成</div>
+              <div class="badge"><span class="dot info"></span>运行中</div>
+              <div class="badge"><span class="dot warning"></span>需审批</div>
+              <div class="badge"><span class="dot danger"></span>错误</div>
+            </div>
+
+            <table class="table" aria-label="log preview">
+              <thead>
+                <tr>
+                  <th>Step</th>
+                  <th>Tool</th>
+                  <th>Status</th>
+                  <th>Output</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>04 Validate Inputs</td>
+                  <td>mcp://fs/read_file</td>
+                  <td><span class="badge"><span class="dot success"></span>OK</span></td>
+                  <td class="muted">inputs.json</td>
+                </tr>
+                <tr>
+                  <td>05 Run Calc</td>
+                  <td>mcp://stdio/run_command</td>
+                  <td><span class="badge"><span class="dot warning"></span>Approve</span></td>
+                  <td class="muted">GearCalc.exe</td>
+                </tr>
+                <tr>
+                  <td>06 Write Report</td>
+                  <td>mcp://fs/write_file</td>
+                  <td><span class="badge"><span class="dot info"></span>Pending</span></td>
+                  <td class="muted">Design_Spec.docx</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <aside class="card">
+            <h2>Inspector（示例）</h2>
+            <div class="muted">右侧面板：配置 / 校验 / 权限边界</div>
+
+            <div style="margin-top: 12px; display: grid; gap: 10px;">
+              <div class="kpi">
+                <div class="label">Primary</div>
+                <div class="value" style="color: var(--primary);">#</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Success</div>
+                <div class="value" style="color: var(--success);">#</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Warning</div>
+                <div class="value" style="color: var(--warning);">#</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Danger</div>
+                <div class="value" style="color: var(--danger);">#</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" role="status" aria-live="polite">
+      <strong>需审批：即将执行本地命令</strong>
+      <div class="hint">展示命令/路径/影响范围后再执行（Explain → Approve）。</div>
+    </div>
+
+    <script>
+      const THEMES = [
+        {
+          id: "indigo",
+          name: "Indigo / 默认",
+          dark: { primary: "#6366f1", primary2: "#818cf8" },
+          light: { primary: "#4f46e5", primary2: "#6366f1" },
+        },
+        {
+          id: "slate",
+          name: "Slate Blue / 工具感",
+          dark: { primary: "#60a5fa", primary2: "#93c5fd" },
+          light: { primary: "#2563eb", primary2: "#3b82f6" },
+        },
+        {
+          id: "emerald",
+          name: "Emerald / 可靠",
+          dark: { primary: "#10b981", primary2: "#34d399" },
+          light: { primary: "#059669", primary2: "#10b981" },
+        },
+        {
+          id: "amber",
+          name: "Amber / 温暖",
+          dark: { primary: "#f59e0b", primary2: "#fbbf24" },
+          light: { primary: "#d97706", primary2: "#f59e0b" },
+        },
+        {
+          id: "rose",
+          name: "Rose / 强提醒",
+          dark: { primary: "#fb7185", primary2: "#fda4af" },
+          light: { primary: "#e11d48", primary2: "#fb7185" },
+        },
+        {
+          id: "mono",
+          name: "Mono / 企业保守",
+          dark: { primary: "#e5e7eb", primary2: "#f3f4f6" },
+          light: { primary: "#0f172a", primary2: "#1f2937" },
+        },
+      ];
+
+      function applyTheme(themeId) {
+        const mode = document.body.getAttribute("data-mode") || "dark";
+        const t = THEMES.find((x) => x.id === themeId) || THEMES[0];
+        const colors = mode === "light" ? t.light : t.dark;
+        document.documentElement.style.setProperty("--primary", colors.primary);
+        document.documentElement.style.setProperty("--primary-2", colors.primary2);
+        document.body.setAttribute("data-theme", themeId);
+      }
+
+      function setMode(mode) {
+        document.body.setAttribute("data-mode", mode);
+        applyTheme(document.body.getAttribute("data-theme") || "indigo");
+      }
+
+      const list = document.getElementById("themes");
+      THEMES.forEach((t) => {
+        const btn = document.createElement("button");
+        btn.className = "theme-btn";
+        btn.type = "button";
+        btn.addEventListener("click", () => applyTheme(t.id));
+
+        const left = document.createElement("div");
+        left.style.display = "grid";
+        left.style.gap = "4px";
+        const title = document.createElement("div");
+        title.textContent = t.name;
+        title.style.fontSize = "12px";
+        const sw = document.createElement("div");
+        sw.className = "swatches";
+        const s1 = document.createElement("span");
+        s1.className = "swatch";
+        s1.style.background = t.dark.primary2;
+        const s2 = document.createElement("span");
+        s2.className = "swatch";
+        s2.style.background = t.dark.primary;
+        const s3 = document.createElement("span");
+        s3.className = "swatch";
+        s3.style.background = "#10b981";
+        const s4 = document.createElement("span");
+        s4.className = "swatch";
+        s4.style.background = "#f59e0b";
+        const s5 = document.createElement("span");
+        s5.className = "swatch";
+        s5.style.background = "#ef4444";
+        sw.append(s1, s2, s3, s4, s5);
+        left.append(title, sw);
+
+        const right = document.createElement("span");
+        right.className = "pill";
+        right.textContent = t.id;
+
+        btn.append(left, right);
+        list.appendChild(btn);
+      });
+
+      document.getElementById("lightBtn").addEventListener("click", () => setMode("light"));
+      document.getElementById("darkBtn").addEventListener("click", () => setMode("dark"));
+
+      applyTheme("indigo");
+    </script>
+  </body>
+</html>
+
