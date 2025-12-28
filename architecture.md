@@ -38,7 +38,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Technical Constraints & Dependencies
 
-*   **OS**: Windows (P1), Linux (P2). macOS deprioritized.
+*   **OS**: macOS (P1), Windows (P2). Linux deprioritized.
 *   **Auth**: Simple Username/Password.
 *   **Client Framework**: Electron (or Tauri if performance dictates).
 *   **Integration Protocol**: MCP over Stdio.
@@ -54,7 +54,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Cross-Cutting Concerns Identified
 
-1.  **State Synchronization**: Builder <-> Package <-> Runtime must all agree on `.bmad` format.
+1.  **State Synchronization**: Builder <-> Package <-> Runtime must all agree on `.bmad` format（见 `_bmad-output/tech-spec.md`）。
 2.  **Sandbox Security**: All tool executions must be scoped to Project Folder.
 3.  **LLM Abstraction**: Must support OpenAI API, Azure OpenAI, and local LLMs (Ollama).
 
@@ -178,7 +178,7 @@ npm create @electron-vite@latest crewagent-runtime -- --template react-ts
 
 | Decision | Choice | Rationale |
 |:---|:---|:---|
-| **Database (Builder)** | PostgreSQL (via Supabase) | Managed service, built-in Auth, generous free tier |
+| **Database (Builder)** | PostgreSQL (Local Docker for dev) | 本地可控、离线友好；与生产 PostgreSQL 保持一致 |
 | **ORM** | SQLAlchemy + Alembic | FastAPI standard, mature, excellent migration support |
 | **Client Local Storage** | Plain JSON Files | Minimal complexity for API keys, execution logs, preferences |
 
@@ -188,8 +188,8 @@ npm create @electron-vite@latest crewagent-runtime -- --template react-ts
 
 | Decision | Choice | Rationale |
 |:---|:---|:---|
-| **Auth Method** | Username/Password (Supabase Auth) | PRD constraint: no OAuth |
-| **API Security** | JWT Tokens (Supabase-issued) | Standard, stateless |
+| **Auth Method** | 系统自研 Email/Username + Password | 简化依赖；满足“无 OAuth”约束；账号体系由后端掌控 |
+| **API Security** | JWT Tokens (Backend self-issued) | 标准无状态；后端统一签发与校验（`Authorization: Bearer <token>`） |
 | **Client API Keys** | User-configurable, plaintext allowed | PRD NFR-SEC-01 |
 
 ---
@@ -210,7 +210,7 @@ npm create @electron-vite@latest crewagent-runtime -- --template react-ts
 |:---|:---|:---|
 | **Frontend Hosting** | Vercel | Optimized for Next.js, auto-HTTPS, free tier |
 | **Backend Hosting** | Railway or Fly.io | Easy Python deployment, auto-scale |
-| **Database Hosting** | Supabase | Managed PostgreSQL, includes Auth |
+| **Database Hosting** | PostgreSQL | 开发：Docker 本地；生产：托管 PostgreSQL（Railway Postgres / Cloud Postgres） |
 | **Client Distribution** | GitHub Releases + Auto-Update | Electron standard practice |
 
 ---
@@ -464,12 +464,58 @@ crewagent-runtime/
 | Interface | Mechanism | Description |
 |:---|:---|:---|
 | **Frontend ↔ Backend** | REST API (HTTPS) | CRUD for packages, Auth |
-| **Backend → DB** | SQLAlchemy ORM | PostgreSQL via Supabase |
+| **Backend → DB** | SQLAlchemy ORM | PostgreSQL（开发：Docker 本地） |
 | **Runtime → LLM** | OpenAI/Ollama API | Via `llm-adapter.ts` |
-| **Runtime → Local Tools** | MCP (Stdio) | Via `mcp-drivers/` |
+| **Runtime → Local Tools** | Builtin ToolHost (ToolCalls) + MCP (optional) | MVP：内置 `fs.*` 工具优先；复杂外部工具后续接 MCP（stdio/jsonrpc） |
 | **Main ↔ Renderer** | Electron IPC | Via `ipc-handlers.ts` |
 
 ---
+
+## Runtime Client Detailed Design (v1.1 / Project-First)
+
+> 本节将 `_bmad-output/architecture/runtime-architecture.md`（已移除 Epic/Story 建议）与配套文档的关键结论，合并进架构文档，作为 Runtime 实现时的“权威约束”。  
+> `.bmad` 包格式的权威规范见：`_bmad-output/tech-spec.md`。
+
+### Core Design Principles
+
+- **Project-First**：用户可见产物默认写入 `ProjectRoot/artifacts/`（可提交 git、可复用）。
+- **Private RuntimeStore**：包缓存、run state、logs 存放在 Runtime 私有目录（建议 Electron `app.getPath('userData')`），不污染项目。
+- **Graph as Source of Truth**：`workflow.graph.json` 是跳转真源（Builder/Runtime 共用），Runtime 负责合法性校验。
+- **Document-as-State**：状态用 `@state/workflow.md` frontmatter 表达；崩溃恢复只依赖 state + graph（logs 可选）。
+- **LLM Decides, Runtime Enforces**：分支选择交给 LLM；Runtime 强制沙箱、限额、原子写、YAML/Schema 校验与审计日志。
+
+### Storage & Mount Model (LLM-visible paths)
+
+- `@project/...` → ProjectRoot（读写）
+- `@pkg/...` → `.bmad` 解包内容（只读）
+- `@state/...` → 当前 run 的私有状态根（读写但用户不可见），核心文件 `@state/workflow.md`
+
+### Entrypoints
+
+- **Agent-First（主入口）**：先选 Agent → 展示 menu → CommandRouter 解析用户输入 → 启动 `WorkflowRun / ScriptRun / Action`。
+- **Workflow-First（次入口）**：先选 workflow（来自 `bmad.json.entry` 或 `workflows[]`）→ 选/默认 `activeAgentId` → 启动 run。
+
+persona 继承硬约束：
+
+- `effectiveAgentId = node.agentId ?? run.activeAgentId`
+
+### Execution Loop (micro-file + graph)
+
+1. 读 `@state/workflow.md` 获取 `currentNodeId/stepsCompleted/variables/...`
+2. 读 `@pkg/workflow.graph.json` 获取后继边（含默认分支提示）
+3. 读当前 node 的 step 文件（来自 graph 的 `node.file`）
+4. LLM 通过 ToolCalls 写 `@project/...` 产物，并用 `fs.apply_patch` 更新 `@state/workflow.md` frontmatter
+5. Runtime 校验：frontmatter 可解析 + schema 合法 + `currentNodeId` 跳转合法（必须是图允许后继）
+
+### Reference Docs (in `_bmad-output/`)
+
+- Runtime 总览：`_bmad-output/architecture/runtime-architecture.md`
+- 两种入口细化：`_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
+- Agent menu 路由契约：`_bmad-output/tech-spec/agent-menu-command-contract.md`
+- PromptComposer 组装指南：`_bmad-output/tech-spec/prompt-composer-examples.md`
+- create-story 理想 trace：`_bmad-output/implementation-artifacts/runtime/create-story-micro-ideal-trace.md`
+- 开发必读（create-story-micro / E2E）：`_bmad-output/implementation-artifacts/runtime/dev-guide-create-story-micro.md`
+- LLM 对话协议（OpenAI-compatible / ToolCalls）：`_bmad-output/tech-spec/llm-conversation-protocol-openai.md`
 
 ## Architecture Validation Results
 
@@ -504,7 +550,7 @@ crewagent-runtime/
 
 | Priority | Gap | Mitigation |
 |:---|:---|:---|
-| **Nice-to-Have** | `.bmad` Package JSON Schema | Define during Epics/Stories phase |
+| **Nice-to-Have** | `.bmad` JSON Schema validation | Spec 已定义（见 `_bmad-output/tech-spec.md`）；在 Runtime 导入时接入校验 |
 | **Nice-to-Have** | CI/CD Pipeline YAML | Add as implementation story |
 
 ---
@@ -530,9 +576,3 @@ crewagent-runtime/
     *   `npx create-next-app@latest crewagent-builder-frontend --typescript --tailwind --eslint --app --src-dir`
     *   `npm create @electron-vite@latest crewagent-runtime -- --template react-ts`
     *   Create `crewagent-builder-backend/` with FastAPI template.
-
-
-
-
-
-

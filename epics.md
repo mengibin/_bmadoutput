@@ -49,8 +49,8 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-INT-04: Runtime must enforce Sandboxed File Access (scoped to Project Folder).
 
 **Management Capabilities (Project & State):**
-- FR-MNG-01: System must create a dedicated Project Folder for each new job/execution.
-- FR-MNG-02: System must save all generated artifacts within the Project Folder.
+- FR-MNG-01: System must support selecting/opening a user **Project Folder** (`ProjectRoot`), and create a dedicated **Run Folder** (private RuntimeStore) for each new execution.
+- FR-MNG-02: System must save user-visible artifacts within `ProjectRoot` by default (e.g., `ProjectRoot/artifacts/`), while keeping package cache, run state, and logs in a private RuntimeStore by default.
 - FR-MNG-03: System must maintain an Execution Log recording each tool call and result.
 - FR-MNG-04: Consumers can view the current Workflow State in the Client UI.
 
@@ -75,9 +75,9 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - Epic 1 Story 1 must initialize repositories using these starters.
 
 **Technical Infrastructure:**
-- Database: PostgreSQL via Supabase
+- Database: PostgreSQL（开发：本地 Docker；生产：托管 PostgreSQL）
 - ORM: SQLAlchemy + Alembic (Backend)
-- Auth: Username/Password via Supabase Auth
+- Auth: Username/Password（系统自研：FastAPI + PostgreSQL）
 - Deployment: Vercel (Frontend), Railway (Backend), GitHub Releases (Runtime)
 
 **LLM-as-Engine Architecture:**
@@ -88,11 +88,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 | FR ID | Epic | Description |
 |:---|:---|:---|
-| FR-DEF-01~05 | Epic 3 | Workflow definitions, Step Chaining, Agent Manifest, Package Export, JSON Validation |
+| FR-DEF-01~04 | Epic 3 | Workflow definitions, Step Chaining, Agent Manifest, Package Export |
+| FR-DEF-05 | Epic 4 | Validate imported `.bmad` packages via JSON Schema |
 | FR-BLD-01~05 | Epic 3 | Node Graph, Graph-First Editing, Agent Forms, Prompt Templates, One-Click Export |
 | FR-RUN-01~06 | Epic 4 | Package Load, Frontmatter State, Document-as-State, Agent Injection, Context Injection, Pause/Resume |
 | FR-INT-01~04 | Epic 4 | Stdio MCP, stdout/stderr capture, FileSystem MCP, Sandboxed Access |
-| FR-MNG-01~04 | Epic 5 | Project Folder, Artifact Storage, Execution Log, State UI |
+| FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |
@@ -112,18 +113,19 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 ### Epic 2: User Authentication & Account Management
 **Goal**: Users can register and login on the Builder platform and the backend can enforce authenticated access.
-**FRs covered**: Architecture Auth Requirements (Supabase Auth)
+**FRs covered**: Architecture Auth Requirements (Custom Auth)
 **Deliverables**:
 - Login page
 - Registration flow
 - JWT authentication
-- Supabase Auth verification in FastAPI backend
+- 自研 Auth（FastAPI）+ PostgreSQL 用户表
+- FastAPI 中 JWT 校验与受保护路由
 
 ---
 
 ### Epic 3: Workflow Visual Builder
 **Goal**: Creators (Simin) can design workflows and agents through a visual interface, export as `.bmad` packages.
-**FRs covered**: FR-DEF-01~05, FR-BLD-01~05
+**FRs covered**: FR-DEF-01~04, FR-BLD-01~05
 **Deliverables**:
 - React Flow canvas with workflow nodes
 - Step/Agent configuration forms
@@ -134,13 +136,15 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 ### Epic 4: Workflow Execution Engine
 **Goal**: Consumers (David) can load and execute `.bmad` workflows locally.
-**FRs covered**: FR-RUN-01~06, FR-INT-01~04, NFR-SEC-01~02, NFR-USAB-01~02
+**FRs covered**: FR-DEF-05, FR-RUN-01~06, FR-INT-01~04, NFR-SEC-01~02, NFR-USAB-01~02
 **Deliverables**:
-- Package loader (ZIP extraction)
-- LLM Adapter (OpenAI + Ollama)
-- MCP Drivers (Stdio, FileSystem)
-- State Manager (Frontmatter R/W)
-- Prompt Composer
+- ProjectManager（选择/打开 ProjectRoot；确保 `ProjectRoot/artifacts/`）
+- RuntimeStore + RunManager（包缓存 + run state/logs，默认不污染项目；对 LLM 暴露 `@project/@pkg/@state`）
+- Package loader（ZIP → RuntimeStore/packages 缓存 + v1.1 JSON Schema validation）
+- GraphStore（`workflow.graph.json`）+ transition guard
+- State Manager（`@state/workflow.md` Frontmatter R/W + 原子落盘）
+- ToolHost（builtin `fs.*`：mount sandbox + `@pkg` 只读；MCP Stdio 可选/后续）
+- Prompt Composer + LLM Adapter + ExecutionEngine（ToolCalls loop）
 
 ---
 
@@ -148,12 +152,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 **Goal**: Consumers can view execution progress, manage settings/drivers, and recover from failures.
 **FRs covered**: FR-MNG-01~04, NFR-REL-01~02, NFR-SEC-01, NFR-USAB-01~02
 **Deliverables**:
-- Project folder management
+- ProjectRoot 最近列表 + Run 列表/Resume
 - Execution log UI
 - Workflow state visualization
 - Crash recovery (resume from Frontmatter)
 - Runtime settings (LLM provider/model, API keys)
-- MCP driver management (enable/disable)
+- Tool policy / MCP driver management (enable/disable)
 
 ---
 
@@ -235,7 +239,8 @@ So that I can save and manage my Workflow definitions.
 
 **Given** I am on the Builder login page
 **When** I click "Register" and enter email, username, and password
-**Then** my account is created via Supabase Auth
+**Then** my account is created via the Builder Backend (FastAPI) and stored in PostgreSQL
+**And** I receive a JWT token and am authenticated
 **And** I am redirected to the Dashboard
 
 ---
@@ -255,21 +260,21 @@ So that I can access my saved Workflows.
 
 ---
 
-### Story 2.3: Integrate Supabase Auth in Backend
+### Story 2.3: Implement JWT Auth in Backend
 
 As a **Developer**,
-I want to integrate Supabase Auth verification in the FastAPI backend,
+I want to implement JWT authentication in the FastAPI backend,
 So that API endpoints are protected.
 
 **Acceptance Criteria:**
 
 **Given** a request comes with a JWT token in the Authorization header
-**When** the backend validates the token with Supabase
+**When** the backend validates the token signature and claims
 **Then** authenticated requests proceed to the handler
 **And** unauthenticated requests receive 401 Unauthorized
 
 **Given** a request has a missing/expired/invalid JWT token
-**When** the backend validates the token with Supabase
+**When** the backend validates the token signature and claims
 **Then** the request is rejected with 401 Unauthorized
 **And** the response contains a structured JSON error body (code + message)
 **And** the protected handler is not executed
@@ -380,16 +385,248 @@ So that I can distribute it to Consumers.
 
 **Given** my workflow project is complete
 **When** I click "Export Package"
-**Then** a `.bmad` ZIP file is generated containing `workflow.md`, step files, and `agents.json`
-**And** the package is validated against the JSON Schema before download
+**Then** a `.bmad` ZIP file is generated containing:
+  - `workflow.md`
+  - `steps/*.md`
+  - `agents.json`
+**And** the Builder runs basic pre-export validation (e.g., JSON parse + referenced files exist) and blocks download with actionable errors if validation fails
+
+> 注：完整 **Package Spec v1.1** 合规导出拆分为 Story 3.8–3.17：
+> - Story 3.8–3.11：ProjectBuilder 基础能力（多 workflows/多 agents/多 node types + edge label/default + v1.1 必填字段）
+> - Story 3.12–3.17：按“先生成 → 再打包 → 再校验”顺序逐步完成 v1.1 导出
+
+---
+
+### Story 3.8: ProjectBuilder Shell (Full-Screen + Navigation)
+
+As a **Creator**,
+I want the Builder to provide a full-screen ProjectBuilder shell that shows workflows and agents for a project,
+So that I can manage my project at a glance and navigate into a workflow editor.
+
+**Acceptance Criteria:**
+
+**Given** I open the Builder for a project
+**When** the page loads
+**Then** I see a **ProjectBuilder** view in full-width layout (no max-width container) with:
+  - a Workflows panel (list + open)
+  - an Agents panel (list)
+
+**Given** the project has workflows
+**When** I click a workflow in the list
+**Then** I enter that workflow’s editor view and can see its canvas
+
+---
+
+### Story 3.9: ProjectBuilder Multi-Workflow Management (Create/Select)
+
+As a **Creator**,
+I want to create and manage multiple workflows within a single project,
+So that I can build multi-workflow packages and keep workflows organized.
+
+**Acceptance Criteria:**
+
+**Given** I am in ProjectBuilder
+**When** I create a workflow (name required)
+**Then** the workflow appears in the workflows list
+**And** it is persisted and visible after refresh
+
+**Given** a project contains multiple workflows
+**When** I open workflow A then workflow B
+**Then** each workflow loads and saves its own graph/content independently
+
+---
+
+### Story 3.10: ProjectBuilder Agent Management (v1.1 Required Fields + Stable `agentId`)
+
+As a **Creator**,
+I want to create and edit agents at the project level with v1.1-required fields and stable ids,
+So that workflows can reference agents via `agentId` and schema validation won’t fail later.
+
+**Acceptance Criteria:**
+
+**Given** I am in ProjectBuilder
+**When** I create an agent
+**Then** it is saved with a stable `agentId` and appears in the agents list
+**And** required v1.1 fields are present (via user input or defaults), including at least:
+  - `metadata.title`
+  - `metadata.icon`
+  - `persona.principles`
+
+**Given** an agent exists
+**When** I edit and save it
+**Then** the updates persist and are reflected across workflows in this project
+
+**Given** I assign an agent to a node in a workflow
+**When** I save and reload
+**Then** the node keeps the assignment by `agentId` (not by free-text name)
+
+---
+
+### Story 3.11: Workflow Editor Node Types + Edge Labels + Default Branch
+
+As a **Creator**,
+I want the workflow editor to support multiple node types and configurable edges,
+So that the graph is v1.1-ready (edge labels + decision default branch + stable node ids).
+
+**Acceptance Criteria:**
+
+**Given** I am in a workflow editor
+**When** I view the palette
+**Then** the palette shows node types (at least: `step`, `decision`, `merge`, `end`, `subworkflow`)
+**And** I can drag a node type into the canvas to create a node of that type
+
+**Given** I create or edit an edge between nodes
+**When** I set an edge label
+**Then** the label is saved with the edge
+**And** if I do not set a label, the system uses a deterministic default label
+
+**Given** a decision node has multiple outgoing edges
+**When** I select one outgoing edge as default
+**Then** that choice is saved and can later be exported as `isDefault: true`
+
+**Given** nodes exist on the canvas
+**When** I save and reload
+**Then** each node keeps a stable `nodeId` (not derived from topological ordering)
+
+---
+
+### Story 3.12: Generate v1.1 `workflow.md` + `steps/<nodeId>.md`
+
+As a **Creator**,
+I want the Builder to generate `workflow.md` and step files in **Package Spec v1.1** format（见 `_bmad-output/tech-spec.md`），
+So that export artifacts (`workflow.graph.json`, `bmad.json`) can reference stable, spec-aligned files.
+
+**Acceptance Criteria:**
+
+**Given** I edit the workflow graph in Builder and save
+**When** the Builder generates workflow documents
+**Then** `workflow.md` contains v1.1 frontmatter（至少含 `schemaVersion/workflowType/currentNodeId/stepsCompleted`）
+**And** step files are generated as `steps/<nodeId>.md`（文件名使用 graph `node.id`，不按拓扑顺序重编号）
+**And** each step file frontmatter is v1.1-aligned（至少含 `schemaVersion/nodeId/type`，且 `nodeId == graph node.id`）
+
+---
+
+### Story 3.13: Generate v1.1 `workflow.graph.json` (nodes/edges + node.file)
+
+As a **Creator**,
+I want the Builder to generate `workflow.graph.json` following **Package Spec v1.1**,
+So that Runtime can validate transitions and load step files deterministically.
+
+**Acceptance Criteria:**
+
+**Given** the Builder has a saved graph (nodes/edges)
+**When** the Builder generates `workflow.graph.json`
+**Then** it includes `schemaVersion/entryNodeId/nodes/edges`
+**And** each node includes `id/type/file` where `file` points to the step file path in the package
+**And** each edge includes `from/to/label`
+**And** when a node has multiple outgoing edges, one edge is marked `isDefault: true`
+
+---
+
+### Story 3.14: Generate v1.1 `bmad.json` Manifest (entry/workflows)
+
+As a **Creator**,
+I want the Builder to generate `bmad.json` following **Package Spec v1.1**,
+So that the exported `.bmad` package has a clear entrypoint and metadata.
+
+**Acceptance Criteria:**
+
+**Given** a workflow project exists
+**When** the Builder generates `bmad.json`
+**Then** it includes `schemaVersion/name/version/createdAt/entry`
+**And** `entry.workflow/entry.graph/entry.agents` reference the generated files in the zip
+**And** the manifest includes `workflows[]` listing all workflows in the package
+**And** `entry` points to the default workflow (deterministic fallback if none)
+
+---
+
+### Story 3.15: Generate v1.1 `agents.json` (Schema-Ready)
+
+As a **Creator**,
+I want the Builder to generate `agents.json` using the v1.1 agent schema (`metadata/persona/prompts/menu/tools`),
+So that Runtime can load personas/prompts/tool policy consistently and schema validation passes.
+
+**Acceptance Criteria:**
+
+**Given** I manage agents in ProjectBuilder and save
+**When** the Builder generates `agents.json`
+**Then** it has `schemaVersion: "1.1"` and an `agents[]` list with required fields
+**And** default tool policy is present (`tools.fs` enabled; `tools.mcp` disabled unless configured)
+
+---
+
+### Story 3.16: Export v1.1 `.bmad` ZIP Bundle (structure + download)
+
+As a **Creator**,
+I want to export a v1.1-compliant `.bmad` ZIP containing all required files in the correct paths,
+So that Runtime can import it without additional transforms.
+
+**Acceptance Criteria:**
+
+**Given** v1.1 artifacts have been generated (`bmad.json/agents.json/workflow.graph.json/workflow.md/steps/`)
+**When** I click "Export Package (v1.1)"
+**Then** the downloaded `.bmad` zip contains those files at the expected paths
+**And** it blocks export if required artifacts are missing
+
+---
+
+### Story 3.17: Validate v1.1 `.bmad` Export with Schemas and Actionable Errors
+
+As a **Creator**,
+I want the Builder to validate my v1.1 `.bmad` export against the official schemas and show actionable errors,
+So that I can fix issues before downloading/importing the package.
+
+**Acceptance Criteria:**
+
+**Given** I click "Export Package (v1.1)"
+**When** the Builder validates the generated export payload using schemas from `crewagent-runtime/spec/bmad-package-spec/v1.1/schemas/`
+**Then** it validates:
+  - `bmad.json` → `bmad.schema.json`
+  - `workflow.graph.json` → `workflow-graph.schema.json`
+  - `agents.json` → `agents.schema.json`
+  - `workflow.md` frontmatter（YAML→JSON）→ `workflow-frontmatter.schema.json`
+  - `steps/*.md` frontmatter（YAML→JSON）→ `step-frontmatter.schema.json`
+**And** validation failures block the download and show actionable error messages (file path + schema pointer)
+
+---
+
+### Story 3.18: ProjectBuilder Package Assets Management (Templates)
+
+As a **Creator**,
+I want to manage package-level assets (e.g., templates) and reference them from workflow steps,
+So that the exported `.bmad` contains everything needed by Runtime without relying on external files.
+
+**Acceptance Criteria:**
+
+**Given** I am in ProjectBuilder
+**When** I create/edit/delete files under the package `assets/` namespace
+**Then** the assets are persisted and listed with stable paths (e.g., `assets/templates/*.md`)
+**And** I can copy/insert asset paths into workflow step `inputs/outputs` or step instructions
+
+**Given** package assets exist
+**When** I export the package (v1.1)
+**Then** the ZIP contains `assets/**` at the expected paths
+**And** `bmad.json.entry.assetsDir == "assets/"` continues to be valid
 
 ---
 
 ## Epic 4: Workflow Execution Engine
 
-**Goal**: Consumers can load and execute `.bmad` workflows locally with project folder management.
+**Goal**: Consumers can load and execute `.bmad` workflows locally（Project-First：产物写入 ProjectRoot；state/logs 存入 RuntimeStore）。
 
-### Story 4.1: Load .bmad Package into Runtime
+**Dev Must Read（强制，避免实现漂移）**
+- `_bmad-output/architecture/runtime-architecture.md`（Runtime 总览与硬约束）
+- `_bmad-output/architecture/entrypoints-agent-vs-workflow.md`（Agent-First vs Workflow-First、停点判断、内部 loop 语义）
+- `_bmad-output/tech-spec/agent-menu-command-contract.md`（Agent Menu → CommandRouter 契约）
+- `_bmad-output/tech-spec/prompt-composer-examples.md`（PromptComposer 组装方式与示例）
+- `_bmad-output/tech-spec/llm-conversation-protocol-openai.md`（OpenAI-compatible ToolCalls；tool 结果如何回填 messages）
+- `_bmad-output/implementation-artifacts/runtime/dev-guide-create-story-micro.md`（开发/验收 Golden Path）
+- `_bmad-output/implementation-artifacts/runtime/create-story-micro-ideal-trace.md`（ExecutionEngine 内部循环“对照脚本”）
+
+**Epic 4 Definition of Done（建议）**
+- 能用示例包 `crewagent-runtime/spec/bmad-package-spec/v1.1/examples/create-story-micro/` 跑通 1 次 end-to-end（对照上述 dev guide + ideal trace）。
+
+### Story 4.1: Load `.bmad` Package (v1.1) into Runtime
 
 As a **Consumer**,
 I want to load a `.bmad` package into the Runtime Client,
@@ -397,149 +634,238 @@ So that I can execute the workflow.
 
 **Acceptance Criteria:**
 
-**Given** I have a `.bmad` file
+**Given** I have a `.bmad` file (ZIP)
 **When** I drag-and-drop or click "Open Package" in Runtime
-**Then** the ZIP is extracted to a temporary location
-**And** the package is validated against JSON Schema
-**And** I see the workflow preview
+**Then** the ZIP is extracted into RuntimeStore package cache（例如：`<RuntimeStoreRoot>/packages/<packageId>/`，以 packageId 去重）
+**And** Runtime reads `bmad.json` and validates it against `schemas/bmad.schema.json`
+**And** Runtime resolves `entry.workflow/entry.graph/entry.agents` and validates all referenced files exist
+**And** Runtime validates `workflow.graph.json` / `agents.json` against their schemas
+**And** I see a workflow preview (name/version + step list derived from graph)
+**And** the extracted package is mounted as `@pkg` and treated as read-only（不允许写入）
+
+**Given** `bmad.json.workflows[]` is present (multi-workflow package)
+**When** I open the package
+**Then** Runtime lists available workflows and allows me to select one
+**And** the selected workflow’s `workflow/graph` paths are used for preview and execution
 
 **Given** the `.bmad` file is corrupted, not a ZIP, or cannot be extracted
 **When** I try to open it in Runtime
 **Then** I see a clear error message explaining the failure
-**And** no project state is created/modified
+**And** no ProjectRoot files are created/modified and no run is created
 **And** the failure is recorded in the execution log
 
-**Given** the `.bmad` file is extractable but fails JSON Schema validation
+**Given** the `.bmad` file is extractable but fails v1.1 schema validation
 **When** the Runtime validates the package
-**Then** I see validation errors (actionable and field-specific where possible)
+**Then** I see validation errors (actionable and field-specific where possible, including file path + schema location)
 **And** the workflow is not loaded for execution
 
 ---
 
-### Story 4.2: Parse Frontmatter to Determine Current Step
+### Story 4.2: Load Workflow Graph & Step Files
 
 As a **Runtime**,
-I want to parse YAML Frontmatter from `workflow.md`,
-So that I know which step to execute next.
+I want to load `workflow.graph.json` as the authoritative workflow structure,
+So that I can render steps and validate transitions.
 
 **Acceptance Criteria:**
 
-**Given** a workflow is loaded
-**When** the Runtime reads `workflow.md` Frontmatter
-**Then** `stepsCompleted` array is parsed
-**And** the next incomplete step is identified
+**Given** a workflow is selected from `bmad.json`
+**When** the Runtime loads `workflow.graph.json`
+**Then** it validates the graph against `schemas/workflow-graph.schema.json`
+**And** it verifies `entryNodeId` exists and all edges reference existing nodes
+**And** it verifies each node’s `file` exists inside the package (relative path)
+**And** it parses each `steps/*.md` frontmatter and validates against `schemas/step-frontmatter.schema.json`
+**And** `steps/*.md` 的 `nodeId` 必须与 graph 的 `node.id` 一致，否则导入失败并提示差异
 
 ---
 
-### Story 4.3: Compose Complete Prompt for LLM
+### Story 4.3: Parse Frontmatter to Determine Current Node
 
 As a **Runtime**,
-I want to assemble the complete prompt (Agent Persona + Step Instructions + Context),
-So that the LLM receives full context.
+I want to parse YAML Frontmatter from `@state/workflow.md`,
+So that I can resume execution and determine the current node.
 
 **Acceptance Criteria:**
 
-**Given** a step is about to execute
+**Given** a run is created or resumed
+**When** the Runtime reads `@state/workflow.md` Frontmatter
+**Then** it validates frontmatter against `schemas/workflow-frontmatter.schema.json`
+**And** it reads `currentNodeId/stepsCompleted/variables/decisionLog/artifacts`
+**And** if `currentNodeId` is empty, the runtime treats the workflow as “not started yet” and uses `workflow.graph.json.entryNodeId` as the first node
+**And** if `currentNodeId` does not exist in the graph, the runtime blocks execution and shows a fix hint
+
+---
+
+### Story 4.4: Compose Complete Prompt for LLM
+
+As a **Runtime**,
+I want to assemble the complete prompt (Agent Persona + Step Instructions + Context + Tool Policy),
+So that the LLM receives full context and stays within runtime guardrails.
+
+**Acceptance Criteria:**
+
+**Given** a node is about to execute
 **When** the Prompt Composer assembles the prompt
-**Then** it includes Agent's System Prompt, Step's User Prompt, and prior artifacts
-**And** placeholder variables are substituted
+**Then** it includes:
+  - Agent persona/prompt template from `agents.json` (by `agentId`)
+  - Current node step instructions from `steps/*.md`
+  - Context injection（最小摘要，不直接塞大文件全文；鼓励 `fs.search → fs.read(window)` 按需取证）
+  - Tool policy（fs/mcp enable + 限额）derived from `agents.json.tools`
+  - Mounts & rules（`@project/@pkg/@state`；`@pkg` 只读；默认产物写 `@project/artifacts/...`）
+**And** it emits machine-parseable user shells aligned with `llm-conversation-protocol-openai.md`:
+  - `RUN_DIRECTIVE`（start/continue/resume）
+  - `NODE_BRIEF`（stepFile、outputsMap、allowedNext）
+  - `USER_INPUT`（当需要用户输入时）
+**And** `variables` from `@state/workflow.md` are provided to the LLM（结构化 JSON 或占位符 substitution；并保证不会泄露真实路径如 RuntimeStoreRoot）
 
 ---
 
-### Story 4.4: Call LLM API (OpenAI / Ollama)
+### Story 4.5: Call LLM API (OpenAI ToolCalls / Local LLM)
 
 As a **Runtime**,
-I want to send the composed prompt to the configured LLM,
-So that I get an AI response.
+I want to send the composed prompt to the configured LLM and run a ToolCalls-based execution loop,
+So that the workflow can progress with tool assistance.
 
 **Acceptance Criteria:**
 
-**Given** the prompt is assembled and API Key is configured
+**Given** the prompt is assembled and a provider is configured
 **When** the LLM Adapter sends the request
-**Then** a response is received (or error is handled)
-**And** tool call requests are extracted if present
+**Then** a response is received (or error is handled gracefully without crashing)
+**And** the request/response uses an OpenAI-compatible `messages/tools/tool_calls/tool` protocol（DeepSeek 等 OpenAI-compatible Provider 可复用同一协议；不依赖 `developer` role）
+**And** when assistant returns `tool_calls`, Runtime:
+  - executes tools by `tool_calls[i].id`
+  - appends `role="tool"` messages with `tool_call_id` and `content=JSON.stringify(result)`
+  - continues the internal loop until the assistant returns no tool calls
+**And** the “stop point” semantics match `_bmad-output/architecture/entrypoints-agent-vs-workflow.md`:
+  - no tool calls + not complete → `WaitingUser`
+  - complete condition met → `Completed`
+**And** the user can Pause/Stop execution without corrupting `@state/workflow.md` state
 
 ---
 
-### Story 4.5: Execute MCP Tool Calls (Stdio Driver)
+### Story 4.6: Execute Tool Calls (Sandboxed FileSystem)
 
 As a **Runtime**,
-I want to execute CLI tools via Stdio MCP Driver,
-So that the AI can run local commands.
+I want to read/write files via a sandboxed FileSystem tool host,
+So that the AI can create and modify project files safely.
 
 **Acceptance Criteria:**
 
-**Given** the LLM requests a tool call with `mcp://stdio/run_command`
-**When** the Stdio Driver spawns the child process
-**Then** stdout and stderr are captured
-**And** output is returned to the LLM for next iteration
+**Given** the LLM requests a file tool call (e.g., `fs.read` / `fs.write` / `fs.apply_patch` / `fs.search`)
+**When** the runtime FileSystem tool host processes the request
+**Then** the operation only applies within the allowed mount roots: `@project/@pkg/@state`
+**And** `@pkg` is read-only; any write to `@pkg/...` is rejected
+**And** writes are only allowed under `@project/...` or `@state/...`
+**And** any path traversal / symlink escape that resolves outside the mounted real paths is rejected (Sandbox)
+**And** `fs.read` supports narrow reads (range/window) and size limits (default: read preview + `truncated=true` for large files) to control tokens
+**And** `fs.search` returns structured matches (`path/line/text` + optional context; supports truncation) so LLM can “先定位再精读”
+**And** `fs.write/fs.apply_patch` enforce write limits + atomic writes (tmp → rename), especially for `@state/workflow.md`
+**And** all tool results follow a stable JSON shape (ToolResult union) and are safe to embed into `role="tool"` messages (see `llm-conversation-protocol-openai.md`)
+**And** every tool call (including rejected ones) is audit-logged with inputs/outputs + duration to `@state/logs/execution.jsonl`
 
----
-
-### Story 4.6: Execute MCP Tool Calls (FileSystem Driver)
-
-As a **Runtime**,
-I want to read/write files via FileSystem MCP Driver,
-So that the AI can create and modify project files.
-
-**Acceptance Criteria:**
-
-**Given** the LLM requests a tool call with `mcp://fs/write_file`
-**When** the FileSystem Driver processes the request
-**Then** the file is written to the Project Folder
-**And** paths outside Project Folder are rejected (Sandbox)
-
-**Given** the LLM requests a file write outside the Project Folder
-**When** the FileSystem Driver validates the requested path
+**Given** the LLM requests a file write outside `@project`/`@state` (or tries to write `@pkg`)
+**When** the runtime validates the requested path
 **Then** the request is rejected with a sandbox violation error
-**And** no file is written outside the Project Folder
+**And** no file is written outside the allowed mount roots
 **And** the rejection (reason + blocked path) is surfaced in the Runtime UI and execution log
 
 ---
 
-### Story 4.7: Update Frontmatter on Step Completion
+### Story 4.7: Validate Graph Transition & Update Frontmatter
 
 As a **Runtime**,
-I want to update `stepsCompleted` in Frontmatter when a step finishes,
-So that execution state is persisted.
+I want to validate state transitions against `@pkg/workflow.graph.json` and persist state in `@state/workflow.md`,
+So that execution is correct, auditable, and recoverable.
 
 **Acceptance Criteria:**
 
 **Given** a step has completed successfully
-**When** the State Manager updates `workflow.md`
-**Then** the step ID is added to `stepsCompleted` array
-**And** the file is saved to disk
+**When** `@state/workflow.md` frontmatter changes
+**Then** the runtime validates:
+  - YAML frontmatter is parseable and matches `schemas/workflow-frontmatter.schema.json`
+  - `currentNodeId` is either empty (not started) or exists in graph
+  - `currentNodeId` change is allowed by an outgoing edge from the previous node (graph transition guard)
+  - `stepsCompleted` does not regress (no removal of completed nodes)
+**And** invalid updates are rejected with a message listing allowed next nodes
+**And** accepted updates are saved atomically (tmp → rename)
+**And** state updates are recoverable without relying on chat history（恢复只依赖 `@state/workflow.md` + `@pkg/workflow.graph.json`）
 
 ---
 
-### Story 4.8: Create Execution Project Folder
+### Story 4.8: Create Run Folder (RuntimeStore) & Initialize State
 
 As a **Consumer**,
-I want a new project folder created for each execution,
-So that each run has an isolated workspace.
+I want a new run folder created for each execution,
+So that each run has isolated state/logs while writing artifacts into my ProjectRoot.
 
 **Acceptance Criteria:**
 
 **Given** I click "Start Execution" on a loaded package
 **When** the Runtime initializes the job
-**Then** a new Project Folder is created under the OS-appropriate app data directory (e.g., `%LOCALAPPDATA%\\CrewAgent\\projects\\{job-id}\\` on Windows)
-**And** the extracted package files are copied there
-**And** all file operations are sandboxed to this Project Folder by default
+**Then** a new Run Folder is created under RuntimeStore (e.g., `<RuntimeStoreRoot>/projects/<projectId>/runs/<runId>/`)
+**And** `@state/` is mapped to the run folder state root and includes:
+  - `@state/workflow.md` (copied from package `workflow.md` and initialized with `runId`/metadata)
+  - `@state/logs/execution.jsonl` (created if missing)
+**And** `@pkg/` is mapped to the extracted package cache (read-only) and is NOT copied into the run folder
+**And** `@project/` is mapped to the user-selected ProjectRoot and `@project/artifacts/` is created if missing
+**And** all `fs.*` operations are sandboxed to the resolved real paths of `@project/@pkg/@state`
 
 ---
 
-### Story 4.9: Save All Artifacts to Project Folder
+### Story 4.9: Save All Artifacts to ProjectRoot (Project-First)
 
 As a **Runtime**,
-I want all generated files to be saved within the Project Folder,
+I want all user-visible generated files to be saved within the user ProjectRoot by default,
 So that outputs are organized and persisted.
 
 **Acceptance Criteria:**
 
 **Given** the AI generates a new file via tool call
-**When** the FileSystem Driver writes the file
-**Then** the file is saved under the current Project Folder
-**And** the artifact is listed in the Execution Log
+**When** the runtime file tool host writes the file
+**Then** the file is saved under `@project/...` (default `@project/artifacts/...`)
+**And** the artifact path (project-relative, e.g. `artifacts/...`) is appended into `@state/workflow.md.artifacts`
+**And** the artifact is listed in the Execution Log UI (backed by `@state/logs/execution.jsonl`)
+
+---
+
+### Story 4.10: Execute MCP Tool Calls (Stdio Driver)
+
+As a **Runtime**,
+I want to execute CLI tools via a Stdio MCP Driver,
+So that the AI can run local commands and capture outputs.
+
+**Acceptance Criteria:**
+
+**Given** MCP is enabled for the current Agent (per `agents.json` agent policy: `tools.mcp.enabled`)
+**When** the LLM requests a tool call with `mcp://stdio/run_command`
+**Then** the Stdio Driver spawns the child process inside the `@project` sandbox (cwd restricted to ProjectRoot)
+**And** stdout and stderr are captured (with size limits)
+**And** the result (exit code + output) is returned to the LLM for next iteration
+
+**Given** MCP is disabled (globally or for the current Agent)
+**When** the LLM requests any `mcp://...` tool call
+**Then** the request is rejected with a clear “MCP disabled” error
+**And** no process is spawned
+
+---
+
+### Story 4.11: Agent-First Session (Menu) & Command Routing Contract
+
+As a **Consumer**,
+I want to start from an Agent Session (menu-driven) and route my input deterministically,
+So that Runtime behaves like BMAD/Cursor: “choose agent → show menu → user input triggers workflow/exec/action”.
+
+**Acceptance Criteria:**
+
+**Given** I have loaded a v1.1 package that contains `agents.json`
+**When** I enter an Agent Session (select an agent)
+**Then** I see the agent persona + its `menu[]` rendered
+**And** when I type user input, Runtime resolves it to a structured command per `_bmad-output/tech-spec/agent-menu-command-contract.md`:
+  - numeric selection / exact trigger / fuzzy match / clarification when multiple candidates
+  - `workflow` starts a WorkflowRun (v1.1 micro-file + graph only; classic workflow.yaml must error clearly)
+  - `exec` starts ScriptRun (or redirects to WorkflowRun when exec points to workflow.md)
+  - `action` dispatches to builtin or prompt action
+**And** after routing to a run, ExecutionEngine follows the same internal loop/stop semantics as Workflow-First
 
 ---
 
@@ -548,9 +874,53 @@ So that outputs are organized and persisted.
 **Goal**: Consumers can view execution progress, manage settings, and recover from failures.
 
 > **Design Decision (BMad Pattern)**: Workflow dependencies are handled via:
-> - `stepsCompleted` Frontmatter array for state tracking
+> - `@state/workflow.md` Frontmatter state（`currentNodeId` + `stepsCompleted` + `variables/decisionLog`）
 > - Prerequisite file checks only at workflow load time
 > - LLM handles implicit data dependencies at runtime
+
+### Story 5.0: Runtime UI Shell & Navigation (IA First)
+
+As a **Consumer**,
+I want a consistent Runtime application shell (navigation + core layout),
+So that all later features (import/run/progress/log/settings) fit into a coherent UI and don’t require rework.
+
+**Acceptance Criteria:**
+
+**Given** I open the Runtime app
+**When** no Project is selected yet
+**Then** I can New/Open a ProjectRoot
+**And** New Project creates `artifacts/` and `ProjectRoot/.crewagent.json` (non-secret)
+**And** I can import/open a `.bmad` package (with validation feedback)
+**And** I can choose entry mode (Workflow-First / Agent-First)
+
+**Given** I have selected a Project and Package
+**When** I am in the main Runtime shell
+**Then** the layout provides (at minimum):
+  - a persistent navigation area (Project / Files / Package / Workflows / Agents / Runs / Settings)
+  - a Run workspace surface with tabs/sections for: Chat, Workflow Progress, Tool Calls, Logs, Artifacts
+  - a global status area showing current Project/Package/Run and RunPhase (Running/WaitingUser/Completed/Failed)
+
+**Given** I am inside a Project
+**When** I open Files / Workflows / Agents
+**Then** I can browse and manage the full ProjectRoot directory tree, and view workflows/agents from the active package
+
+**Given** I open Settings
+**When** I configure Runtime
+**Then** I can manage LLM Provider, package import/cache, and theme (persisted in RuntimeStore; no secrets written into ProjectRoot)
+
+**Given** I trigger an execution-related action (Run/Pause/Resume/Stop)
+**When** the UI updates
+**Then** it reflects the canonical state derived from `@state/workflow.md` + `@pkg/workflow.graph.json` (not from chat memory)
+
+**Given** I switch between Agent-First and Workflow-First
+**When** I start a run from either entry
+**Then** both converge into the same Run workspace (same progress/log panes; same stop-point semantics)
+
+**References**
+- UX spec: `_bmad-output/ux-design-specification.md`（Runtime：Explain-Plan-Approve / State is Visible / Safety by Default）
+- Runtime entrypoints: `_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
+
+---
 
 ### Story 5.1: View Current Workflow State
 
@@ -562,8 +932,8 @@ So that I know the execution progress.
 
 **Given** a workflow is loaded or executing
 **When** I look at the main panel
-**Then** I see which steps are completed, in-progress, and pending
-**And** the current step is highlighted
+**Then** I see which nodes are completed, in-progress, and pending (derived from `workflow.graph.json` + `@state/workflow.md` frontmatter)
+**And** the current node is highlighted
 
 ---
 
@@ -579,6 +949,9 @@ So that I can debug issues.
 **When** I click "View Log"
 **Then** I see a chronological list of tool calls, inputs, and outputs
 **And** errors are highlighted in red
+**And** logs are backed by an append-only JSONL file under RuntimeStore (e.g., `@state/logs/execution.jsonl`)
+**And** each tool call entry includes `tool_call_id`, tool name, args (sanitized), result (ToolResult JSON), and duration
+**And** the log can optionally retain provider raw response fields for compatibility (e.g., OpenAI-compatible providers that require echoing extra fields)
 
 ---
 
@@ -591,8 +964,9 @@ So that I don't lose progress.
 **Acceptance Criteria:**
 
 **Given** the Runtime crashed or was closed during execution
-**When** I reopen the Runtime and load the same project folder
-**Then** the workflow resumes from the last completed step (per Frontmatter)
+**When** I reopen the Runtime and open the same ProjectRoot
+**Then** the Runtime can locate the latest run for that ProjectRoot (from RuntimeStore) and offer Resume
+**And** on resume, the workflow continues from `@state/workflow.md.currentNodeId` / `stepsCompleted` (per Frontmatter)
 **And** no duplicate work is performed
 
 ---
@@ -621,9 +995,10 @@ So that I can use my preferred AI service.
 **Acceptance Criteria:**
 
 **Given** I am in Runtime Settings
-**When** I select Provider (OpenAI / Azure / Ollama) and enter Endpoint URL / Model Name
+**When** I select Provider (OpenAI / OpenAI-compatible / Azure / Ollama) and enter Endpoint URL / Model Name
 **Then** the configuration is saved
 **And** the LLM Adapter uses these settings for API calls
+**And** for OpenAI-compatible providers (e.g., DeepSeek), the Runtime uses the OpenAI `chat.completions` ToolCalls protocol (see `_bmad-output/tech-spec/llm-conversation-protocol-openai.md`)
 
 ---
 
@@ -661,8 +1036,11 @@ So that I can control what tools the AI can use.
 
 **Given** I am in Runtime Settings
 **When** I view the "MCP Drivers" section
-**Then** I see a list of available drivers (Stdio, FileSystem, etc.)
-**And** I can toggle each driver on/off
+**Then** I see:
+  - Builtin tools（例如 `fs.*`，用于 `@project/@state` 文件操作，MVP 必选）
+  - MCP drivers（例如 Stdio，按需启用）
+**And** I can toggle MCP drivers on/off (global)
+**And** when a MCP driver is disabled, all `mcp://...` calls are rejected with a clear error
 
 ---
 
@@ -672,12 +1050,10 @@ So that I can control what tools the AI can use.
 
 CrewAgent follows **BMad's "Document-as-State"** pattern:
 
-1. **State Tracking**: `stepsCompleted: [1, 2, 3]` in Frontmatter
+1. **State Tracking**: `@state/workflow.md` frontmatter（`currentNodeId` + `stepsCompleted` + `variables/decisionLog/artifacts`，Spec v1.1）
 2. **Prerequisites**: Checked only at workflow load (not per-step)
-3. **Execution Order**: Sequential, determined by LLM reading state
+3. **Execution Order**: Graph-driven (`workflow.graph.json` as source of truth). LLM chooses the next edge; runtime validates transitions.
 4. **Data Dependencies**: Implicit - LLM reads prior artifacts as needed
 5. **No Parallel Execution** (MVP)
 
 This keeps the runtime simple while preserving LLM flexibility.
-
-

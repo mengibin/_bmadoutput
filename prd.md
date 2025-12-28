@@ -128,8 +128,8 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 ## Technical Constraints & Architecture
 
 ### Desktop Client (Runtime)
-*   **OS Strategy**: **Windows (Priority #1)** and **Linux** (Priority #2).
-    *   *Constraint*: Must run on typical Engineering Workstations (often restricted environments). macOS support is deprioritized.
+*   **OS Strategy**: **macOS (Priority #1)** and **Windows** (Priority #2).
+    *   *Constraint*: Must run on typical Engineering Workstations (often restricted environments). Linux support is deprioritized.
 *   **Framework**: Electron (or Tauri if performance dictates) for cross-platform Node.js access.
 *   **Offline Mode**: Essential requirement. Client must function with zero internet access after initial license check.
 
@@ -157,7 +157,7 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 **Must-Have Capabilities:**
 *   **Visual Builder (Basic)**: Drag-and-drop flow editing, Node configuration.
-*   **Client Runtime**: Windows support, Local FileSystem Driver, Terminal Driver.
+*   **Client Runtime**: macOS support (priority), Windows support, Local FileSystem Driver, Terminal Driver.
 *   **Definition Format**: `.bmad` package export/import with JSON Schema validation.
 
 ### Post-MVP Features
@@ -213,8 +213,8 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-INT-04**: Runtime must enforce **Sandboxed File Access**: All file operations must be scoped to the Project's designated folder.
 
 ### Management Capabilities (Project & State)
-*   **FR-MNG-01**: System must create a dedicated **Project Folder** for each new job/execution.
-*   **FR-MNG-02**: System must save all generated artifacts (code, docs, intermediates) within this Project Folder.
+*   **FR-MNG-01**: System must support selecting/opening a user **Project Folder** (`ProjectRoot`), and create a dedicated **Run Folder** (private RuntimeStore) for each new execution.
+*   **FR-MNG-02**: System must save user-visible artifacts (code, docs, intermediates) within `ProjectRoot` by default (e.g., `ProjectRoot/artifacts/`), while keeping package cache, run state, and logs in a private RuntimeStore by default.
 *   **FR-MNG-03**: System must maintain an **Execution Log** recording each tool call and its result for debugging.
 *   **FR-MNG-04**: Consumers can view the current **Workflow State** (which step is active, what's completed) in the Client UI.
 
@@ -234,11 +234,154 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 ---
 
+## Appendix A — Runtime Client Detailed Spec (MVP)
+
+> 本附录将 `_bmad-output/tech-spec/runtime-spec.md` 的内容并入 PRD，作为 Runtime 需求/约束的更细化版本（Cursor 风格：工具硬实现，流程由 LLM 驱动；ToolCalls 优先，MCP 预留）。
+>
+> `.bmad` 包格式（schemas/templates/examples）的权威技术规范见：[`_bmad-output/tech-spec.md`](tech-spec.md)。
+
+### A.1 `.bmad` 包（v1.1）约定
+
+#### A.1.1 ZIP 结构（最小可跑）
+
+```text
+{name}.bmad  (zip)
+  bmad.json                 # 包清单/入口（必选）
+  workflow.graph.json       # 图结构（必选，权威真源）
+  workflow.md               # 入口文档 + Frontmatter 状态（必选）
+  steps/                    # micro-file steps（必选）
+    step-01-*.md
+    decide-*.md
+    end-*.md
+  agents.json               # Agent persona + prompts + tool policy（必选）
+  assets/                   # 可选：图/模板/静态文件
+
+  # 可选：多 workflow（一个包多个流程）
+  workflows/<workflow-id>/
+    workflow.graph.json
+    workflow.md
+    steps/
+      ...
+```
+
+#### A.1.2 Step 来源与顺序（micro-file + graph）
+
+- **来源**：节点文件在 `steps/*.md`（每个 node 一个文件，step/decision/merge/end 都可建模成 node）。
+- **权威顺序/跳转**：以 `workflow.graph.json` 为准（Builder 渲染画布；Runtime 校验 `currentNodeId` 的合法跳转）。
+- **索引（给 LLM 快速打开）**：`workflow.md` 正文建议包含 steps 索引链接，但它不是“真源”，只是可读索引。
+
+#### A.1.3 `workflow.md` Frontmatter（Document-as-State）
+
+必须字段（MVP/分支友好）：
+- `schemaVersion: "1.1"`（与包 spec 对齐）
+- `workflowType: string`
+- `currentNodeId: string`
+- `stepsCompleted: string[]`（已完成 nodeId 集合）
+- `variables: object`（分支变量，默认 `{}`）
+- `decisionLog: Array<{from,to,label,reason?,decidedAt?}>`（默认 `[]`）
+
+建议字段（增强可恢复与可审计）：
+- `runId: string`（uuid）
+- `project_name`, `user_name`, `date`
+- `inputDocuments: string[]`（上下文注入入口）
+- `artifacts: string[]`（runtime 记录输出物路径）
+- `updatedAt: string`（ISO datetime）
+
+### A.2 Runtime 组件拆分（Electron）
+
+#### A.2.1 Main Process（能力与安全边界）
+
+- `ProjectManager`：打开/切换 `ProjectRoot`（用户工程目录），确保默认产物目录（如 `ProjectRoot/artifacts/`）存在。
+- `RuntimeStore`：应用私有目录根（推荐 Electron `app.getPath('userData')`）；保存包缓存、run state、logs（用户不可见、不污染项目）。
+- `PackageManager`：导入 `.bmad`（zip 解压到 RuntimeStore/packages/）、JSON Schema 校验、生成包清单（`bmad.json`）；如 `bmad.json.workflows[]` 存在，则在 UI 提供“选择要运行的 workflow”（默认使用 `entry` 指定的入口）。
+- `RunManager`：创建/恢复 Run（一次执行实例），在 RuntimeStore/projects/<projectId>/runs/<runId>/ 下初始化 `@state/workflow.md` 与日志目录。
+- `WorkflowStateStore`：frontmatter 读写（解析/校验/原子写 tmp→rename）。
+- `GraphStore`：加载 `workflow.graph.json`，提供 node/edge 查询与跳转合法性校验（`currentNodeId -> nextNodeId`）。
+- `StepIndex`：为 UI/LLM 生成“可读索引”（可从 graph + steps 生成；也可回填到 `workflow.md` 正文）。
+- `AgentRegistry`：加载 `agents.json`，提供 persona/prompt 模板。
+- `PromptComposer`：拼 system/user prompt（包含 tool 规范 + 沙箱规则）。
+- `LLMAdapter`：先实现 OpenAI ToolCalls；本地模型后续兼容（可先不做）。
+- `ToolHost`：内置 ToolCalls（文件/patch/搜索/日志写入），并在写入时执行沙箱与校验（frontmatter YAML 可解析；可选：状态跳转必须符合 graph）。
+- `ExecutionEngine`：对话编排器（LLM ↔ ToolCalls）。不替 LLM 决策走哪条分支；Runtime 只做“硬边界”（工具/沙箱/校验/日志）与“合法性校验”（next node 必须是图允许的后继）。
+- `LogStore`：JSONL 追加写（执行记录/工具调用/错误），供 UI 展示。
+
+#### A.2.2 Renderer（体验与可视化）
+
+- Package 导入/历史
+- Workflow 预览（steps 列表 + 进度）
+- Chat 流式输出
+- ToolCalls 面板（显示执行的读写/patch）
+- Artifacts 面板（生成文件列表）
+- Settings（provider/model/apiKey/timeout）
+
+### A.3 执行模型：ToolCalls 优先（MVP 主干）
+
+#### A.3.1 Cursor 兼容执行循环（推荐默认）
+
+1) Runtime 打开 run：把三类 mount 暴露给 LLM（仅暴露 alias，不泄露真实路径）：
+   - `@project/...` → ProjectRoot（读写，默认产物写 `@project/artifacts/...`）
+   - `@pkg/...` → `.bmad` 解包内容（只读）
+   - `@state/...` → 本次 run 的私有状态（读写，用户不可见），核心文件 `@state/workflow.md`
+2) Runtime 发送初始指令（system 级约束 + tool policy），要求 LLM：
+   - 读取 `@state/workflow.md` frontmatter 的 `currentNodeId/stepsCompleted/variables`
+   - 根据 `@pkg/workflow.graph.json` 的出边决定 next node，并读取对应 `@pkg/steps/<node-file>.md`
+   - 完成本步产出后，用普通文件工具更新 `@state/workflow.md` frontmatter（追加 `stepsCompleted`、更新 `currentNodeId/variables/decisionLog/updatedAt/artifacts`），并把产物写到 `@project/...`（默认 `@project/artifacts/`）
+3) 进入 `chatLoop`：
+   - LLM 输出（可能包含 toolCalls）
+   - ToolHost 执行 toolCalls → 把结果回给 LLM
+4) 结束条件（由 LLM/用户决定）：LLM 明确告知完成，或用户点击 Pause/Stop。
+5) UI 通过监听/重读 `@state/workflow.md` frontmatter 展示进度（current node 高亮、stepsCompleted 进度、artifacts 列表等）。
+
+#### A.3.2 严格模式（可选）：专用状态更新工具
+
+默认模式：LLM 直接用 `fs.apply_patch/fs.write` 更新 `@state/workflow.md`；Runtime 负责原子落盘、YAML 校验、跳转合法性校验。  
+可选增强：提供 `runtime.update_state(...)` / `runtime.complete_node(...)` 由 Runtime 负责读-改-写与校验（作为开关不影响 Cursor 兼容性）。
+
+### A.4 安全与可靠性（必须从一开始做）
+
+#### A.4.1 文件沙箱（NFR-SEC-02）
+
+- 所有 fs 工具只能访问 mount roots：`@project/@pkg/@state`
+  - Runtime 负责把 mount alias 映射到真实路径，并在 `realpath` 后做前缀校验，防 `..` 和 symlink escape
+  - `@pkg` 强制只读；任何写入直接拒绝
+- 单次读取大小限制（例如 512KB/文件）
+- 写入默认走 `apply_patch`；`write` 只允许写到 `@project` 或 `@state`
+- 对包含 YAML frontmatter 的写入（尤其 `@state/workflow.md`）建议在落盘前解析校验，失败则拒绝并返回可修复错误
+
+#### A.4.2 超时与资源限制（NFR-REL-02）
+
+- ToolCalls 默认超时 5min（可配置）。
+- stdout/stderr（未来 MCP）需要截断与大小上限。
+
+#### A.4.3 可恢复（NFR-REL-01）
+
+- crash 后只需重新加载 run：
+  - 从 `@state/workflow.md` 的 `currentNodeId/stepsCompleted/variables` 恢复 next node
+  - 从 `@state/logs/execution.jsonl` 恢复审计线索（不要求恢复完整对话）
+
+### A.5 MCP（后续接入的重工具通道）
+
+- 本地文件/轻操作：先用 ToolCalls（内置 ToolHost）
+- 复杂外部工具：后续接入严格 MCP（stdio/jsonrpc）
+
+### A.6 MVP 里程碑（建议）
+
+1) 导入 `.bmad` → 选择 Project → 创建 run（RuntimeStore）→ 展示 steps 列表  
+2) 实现 `fs.read/fs.write/fs.apply_patch` ToolCalls（含沙箱与 frontmatter 校验）  
+3) 让 LLM 跑通 step-01 → 写入 artifact → 更新 frontmatter  
+4) 增加 `fs.search`、完善日志与 UI  
+5) （可选）严格模式状态更新工具  
+6) 之后再引入 MCP（stdio driver）与审批/权限  
+
+### A.7 子流程（Sub-Workflow）支持（v1.2+）
+
+建议通过 node 类型 + `callStack` 实现 call/return；并做循环依赖检测与最大嵌套深度限制。
+
 ## Document Completion
 
 **PRD Status**: ✅ Complete
 **Completed By**: Mengbin
-**Completion Date**: 2025-12-21
+**Completion Date**: 2025-12-23
 
 This document serves as the **Capability Contract** for CrewAgent. All downstream UX Design, Architecture, and Development work should trace back to the requirements defined herein.
 
@@ -246,12 +389,5 @@ This document serves as the **Capability Contract** for CrewAgent. All downstrea
 1. **Create Architecture** (`/bmad-bmm-workflows-create-architecture`) - Define system design based on technical constraints.
 2. **Create Epics & Stories** (`/bmad-bmm-workflows-create-epics-and-stories`) - Break down FRs into implementable work units.
 3. **Create UX Design** (`/bmad-bmm-workflows-create-ux-design`) - Design the Visual Builder and Client UI.
-
-
-
-
-
-
-
 
 

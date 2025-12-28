@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="320" viewBox="0 0 1000 320">
+  <defs>
+    <style>
+      .box { fill: #ffffff; stroke: #1f2937; stroke-width: 2; rx: 14; ry: 14; }
+      .title { font: 700 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #111827; }
+      .text { font: 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #374151; }
+      .muted { fill: #6b7280; }
+      .arrow { stroke: #111827; stroke-width: 2; fill: none; marker-end: url(#m); }
+      .note { font: 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #6b7280; }
+    </style>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="320" fill="#f9fafb"/>
+
+  <text class="title" x="500" y="36" text-anchor="middle">Agent 与 Workflow 的组合关系（不是 1:1）</text>
+
+  <rect class="box" x="60" y="90" width="260" height="140"/>
+  <text class="title" x="190" y="120" text-anchor="middle">Agent（Persona）</text>
+  <text class="text" x="190" y="145" text-anchor="middle">我是谁 / 怎么说话</text>
+  <text class="text muted" x="190" y="168" text-anchor="middle">system prompt / rules / menu</text>
+  <text class="text muted" x="190" y="190" text-anchor="middle">可在多个流程中复用</text>
+
+  <rect class="box" x="680" y="90" width="260" height="140"/>
+  <text class="title" x="810" y="120" text-anchor="middle">Workflow（Process）</text>
+  <text class="text" x="810" y="145" text-anchor="middle">要做什么 / 分几步</text>
+  <text class="text muted" x="810" y="168" text-anchor="middle">classic: workflow.yaml + instructions</text>
+  <text class="text muted" x="810" y="190" text-anchor="middle">micro: workflow.md + steps/</text>
+
+  <rect class="box" x="370" y="70" width="260" height="180"/>
+  <text class="title" x="500" y="105" text-anchor="middle">LLM 执行会话</text>
+  <text class="text" x="500" y="130" text-anchor="middle">保持 persona 执行流程</text>
+  <text class="text muted" x="500" y="153" text-anchor="middle">读文件 / 产出内容 / 调工具</text>
+  <text class="text muted" x="500" y="175" text-anchor="middle">更新状态（frontmatter）</text>
+  <text class="note" x="500" y="210" text-anchor="middle">同一 persona 可跑多个 workflow；同一 workflow 也可在不同 persona 下运行</text>
+
+  <path class="arrow" d="M 320 160 L 370 160"/>
+  <path class="arrow" d="M 680 160 L 630 160"/>
+</svg>

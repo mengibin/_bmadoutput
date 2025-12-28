@@ -1,4 +1,4 @@
-# generated: 2025-12-21T15:51:02+08:00
+# generated: 2025-12-28T20:35:46+08:00
 # project: CrewAgent
 # project_key: crewagent
 # tracking_system: file-system
@@ -34,49 +34,63 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2025-12-21T15:51:02+08:00"
+generated: "2025-12-28T20:35:46+08:00"
 project: "CrewAgent"
 project_key: "crewagent"
 tracking_system: "file-system"
 story_location: "_bmad-output/implementation-artifacts"
 
 development_status:
-  epic-1: in-progress
+  epic-1: done
   1-1-initialize-builder-frontend-repository: done
   1-2-initialize-builder-backend-repository: done
   1-3-initialize-runtime-client-repository: done
-  1-4-configure-ci-pipeline-for-all-repositories: in-progress
+  1-4-configure-ci-pipeline-for-all-repositories: done
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-user-registration-on-builder: backlog
-  2-2-user-login-on-builder: backlog
-  2-3-integrate-supabase-auth-in-backend: backlog
+  epic-2: done
+  2-1-user-registration-on-builder: done
+  2-2-user-login-on-builder: done
+  2-3-implement-jwt-auth-in-backend: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-create-new-workflow-project: backlog
-  3-2-add-and-edit-step-nodes-in-graph: backlog
-  3-3-connect-steps-to-form-execution-order: backlog
-  3-4-define-agent-personas-via-form: backlog
-  3-5-configure-agent-prompt-templates: backlog
-  3-6-auto-generate-markdown-from-graph: backlog
-  3-7-one-click-export-as-bmad-package: backlog
+  epic-3: done
+  3-1-create-new-workflow-project: done
+  3-2-add-and-edit-step-nodes-in-graph: done
+  3-3-connect-steps-to-form-execution-order: done
+  3-4-define-agent-personas-via-form: done
+  3-5-configure-agent-prompt-templates: done
+  3-6-auto-generate-markdown-from-graph: done
+  3-7-one-click-export-as-bmad-package: done
+  3-8-project-builder-shell-full-screen-and-navigation: done
+  3-9-project-builder-multi-workflow-management: done
+  3-10-project-builder-agent-management-v1-1-required-fields: done
+  3-11-workflow-editor-node-types-edge-labels-default-branch: done
+  3-12-generate-v1-1-workflow-and-step-files: done
+  3-13-generate-v1-1-workflow-graph-json: done
+  3-14-generate-v1-1-bmad-json-manifest: done
+  3-15-generate-v1-1-agents-json-schema-ready: done
+  3-18-project-builder-package-assets-management: done
+  3-16-export-v1-1-bmad-zip-bundle: done
+  3-17-validate-v1-1-export-with-schemas: done
   epic-3-retrospective: optional
 
   epic-4: backlog
   4-1-load-bmad-package-into-runtime: backlog
-  4-2-parse-frontmatter-to-determine-current-step: backlog
-  4-3-compose-complete-prompt-for-llm: backlog
-  4-4-call-llm-api-openai-ollama: backlog
-  4-5-execute-mcp-tool-calls-stdio-driver: backlog
-  4-6-execute-mcp-tool-calls-filesystem-driver: backlog
-  4-7-update-frontmatter-on-step-completion: backlog
+  4-2-load-workflow-graph-and-step-files: backlog
+  4-3-parse-frontmatter-to-determine-current-node: backlog
+  4-4-compose-complete-prompt-for-llm: backlog
+  4-5-call-llm-api-openai-toolcalls-local-llm: backlog
+  4-6-execute-tool-calls-sandboxed-filesystem: backlog
+  4-7-validate-graph-transition-and-update-frontmatter: backlog
   4-8-create-execution-project-folder: backlog
   4-9-save-all-artifacts-to-project-folder: backlog
+  4-10-execute-mcp-tool-calls-stdio-driver: backlog
+  4-11-agent-first-session-menu-and-command-routing: backlog
   epic-4-retrospective: optional
 
-  epic-5: backlog
+  epic-5: in-progress
+  5-0-runtime-ui-shell-and-navigation: ready-for-dev
   5-1-view-current-workflow-state: backlog
   5-2-view-execution-log: backlog
   5-3-resume-execution-after-crash: backlog

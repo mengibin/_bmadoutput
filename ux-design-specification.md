@@ -54,7 +54,7 @@ UX 的关键是：把复杂的“AI + 工具编排”变成**可理解、可预�
 1. **模板优先 vs 自由度**：既要给新手一条“可走通”的路，又要允许专家局部深改。
 2. **信任与安全**：LLM 不是可执行引擎的绝对真理；必须提供“可解释 + 可审批 + 可验证”的交互闭环。
 3. **双端体验一致性**：Builder（定义）与 Runtime（执行）必须共享同一套心智模型：Package / Workflow / Step / Agent / Artifact / Project Folder。
-4. **本地优先与企业限制**：离线、代理、权限、路径（Windows 优先）都要在 UX 中显性化。
+4. **本地优先与企业限制**：离线、代理、权限、路径（macOS 优先，其次 Windows）都要在 UX 中显性化。
 5. **复杂信息呈现**：图编辑（React Flow）、配置表单、日志/工具输出、文件产物，都需要低认知负担的组织方式。
 
 ### Design Opportunities
@@ -80,7 +80,7 @@ CrewAgent 的“定义体验”由两个子核心构成：
 ### Platform Strategy
 
 - **Builder（Web）**：桌面端浏览器为主（工程场景），移动端仅保证可读与基础管理。
-- **Runtime（Desktop）**：Windows 优先；窗口可缩放；键盘操作完整；离线可用。
+- **Runtime（Desktop）**：macOS 优先，其次 Windows；窗口可缩放；键盘操作完整；离线可用。
 
 ### Effortless Interactions（需要做到“零思考”的动作）
 

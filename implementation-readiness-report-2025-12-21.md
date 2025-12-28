@@ -171,7 +171,7 @@ date: '2025-12-21'
 - **Epic 1 偏“技术里程碑”**：建议将 Epic 1 的价值表述与 DoD 强化为“开发者可在 X 分钟内本地跑通三端 Hello World + CI 通过”，避免变成无限扩张的基础设施黑洞。
 - **跨 Epic 放置导致潜在顺序问题**：`Story 2.3 Configure LLM API Key in Runtime` 当前归在 Epic 2（Auth），但实际属于 Runtime Settings/Execution 范畴，建议移动到 Epic 5（Settings）或 Epic 4（Runtime）以避免“先做 Runtime UI 再做 Runtime 核心”的逆序实现。
 - **AC 缺少负向/错误态覆盖**（抽样）：`Story 4.1` 未覆盖无效包/校验失败反馈；`Story 2.4` 未覆盖 token 过期/签名无效等；`Story 4.6` 未覆盖越权路径的用户提示与审计。
-- **Windows 路径与沙箱执行边界需明确**：`Story 4.8` 写 `~/.crewagent/...` 更偏类 Unix；若 Windows 优先，需要明确 Windows 默认落盘路径与权限/沙箱策略。
+- **macOS/Windows 路径与沙箱执行边界需明确**：`Story 4.8` 写 `~/.crewagent/...` 更偏 macOS/Linux；在 macOS 优先前提下仍需补齐 Windows 默认落盘路径与权限/沙箱策略（以及 UI 文案）。
 
 ### 🟡 Minor Concerns
 
@@ -193,7 +193,7 @@ date: '2025-12-21'
 ### Recommended Next Steps
 
 1. 运行 UX Designer：`*create-ux-design`（生成 UX 规格文档到 `_bmad-output/`）
-2. 根据 UX 文档回补/调整 `epics.md`（至少修正 Story 2.3 归属、补齐关键错误态 AC、明确 Windows 路径策略）
+2. 根据 UX 文档回补/调整 `epics.md`（至少修正 Story 2.3 归属、补齐关键错误态 AC、明确 macOS/Windows 路径策略）
 3. 再次运行：`*implementation-readiness`（确认 Gate Check 通过）
 4. 进入 Phase 4：SM 运行 `*sprint-planning` 生成 `sprint-status.yaml`
 

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360" viewBox="0 0 1000 360">
+  <defs>
+    <style>
+      .box { fill: #ffffff; stroke: #1f2937; stroke-width: 2; rx: 14; ry: 14; }
+      .title { font: 700 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #111827; }
+      .text { font: 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #374151; }
+      .muted { fill: #6b7280; }
+      .arrow { stroke: #111827; stroke-width: 2; fill: none; marker-end: url(#m); }
+    </style>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="360" fill="#f9fafb"/>
+
+  <rect class="box" x="30" y="70" width="180" height="130"/>
+  <text class="title" x="120" y="100" text-anchor="middle">BMAD-METHOD</text>
+  <text class="text" x="120" y="125" text-anchor="middle">src/ 内容仓库</text>
+  <text class="text muted" x="120" y="148" text-anchor="middle">agents / workflows</text>
+  <text class="text muted" x="120" y="170" text-anchor="middle">tasks / tools</text>
+
+  <rect class="box" x="250" y="70" width="190" height="130"/>
+  <text class="title" x="345" y="100" text-anchor="middle">CLI Installer</text>
+  <text class="text" x="345" y="125" text-anchor="middle">npx bmad-method install</text>
+  <text class="text muted" x="345" y="148" text-anchor="middle">copy / build / validate</text>
+  <text class="text muted" x="345" y="170" text-anchor="middle">generate IDE launchers</text>
+
+  <rect class="box" x="480" y="55" width="220" height="145"/>
+  <text class="title" x="590" y="85" text-anchor="middle">Project Folder</text>
+  <text class="text" x="590" y="110" text-anchor="middle">_bmad/（安装产物）</text>
+  <text class="text muted" x="590" y="133" text-anchor="middle">compiled agents / workflows</text>
+  <text class="text muted" x="590" y="155" text-anchor="middle">core/tasks/workflow.xml</text>
+
+  <rect class="box" x="480" y="215" width="220" height="110"/>
+  <text class="title" x="590" y="245" text-anchor="middle">IDE Commands</text>
+  <text class="text" x="590" y="270" text-anchor="middle">.agent / .cursor / .claude</text>
+  <text class="text muted" x="590" y="293" text-anchor="middle">launcher files only</text>
+
+  <rect class="box" x="740" y="70" width="230" height="130"/>
+  <text class="title" x="855" y="100" text-anchor="middle">IDE LLM Session</text>
+  <text class="text" x="855" y="125" text-anchor="middle">加载 persona + workflow</text>
+  <text class="text muted" x="855" y="148" text-anchor="middle">classic: workflow.xml + yaml</text>
+  <text class="text muted" x="855" y="170" text-anchor="middle">micro: workflow.md + steps/</text>
+
+  <rect class="box" x="740" y="215" width="230" height="110"/>
+  <text class="title" x="855" y="245" text-anchor="middle">Outputs &amp; State</text>
+  <text class="text" x="855" y="270" text-anchor="middle">写入项目文件/产物</text>
+  <text class="text muted" x="855" y="293" text-anchor="middle">frontmatter 作为状态</text>
+
+  <path class="arrow" d="M 210 135 L 250 135"/>
+  <path class="arrow" d="M 440 135 L 480 128"/>
+  <path class="arrow" d="M 590 200 L 590 215"/>
+  <path class="arrow" d="M 700 135 L 740 135"/>
+  <path class="arrow" d="M 855 200 L 855 215"/>
+</svg>

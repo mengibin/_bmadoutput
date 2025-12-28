@@ -1,6 +1,6 @@
 # Story 1.4: Configure CI Pipeline for All Repositories
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -105,10 +105,10 @@ so that code is automatically built and checked on every push / PR.
     - `npm run build:ci`（仅 `tsc && vite build`，避免 `electron-builder` 打包/签名）
   - [x] 若现有脚本没有 `build:ci`：补充 `package.json` scripts（本 Story 内完成）
 
-- [ ] 5) Merge blocking（Branch Protection）（AC: 1）
-  - [ ] 在 GitHub 仓库设置中启用分支保护：Require status checks to pass before merging
-  - [ ] 将 required checks 设为 `ci`（与 workflow job name 对齐）
-  - [ ] 用一个测试 PR 验证：CI 失败时无法 merge
+- [x] 5) Merge blocking（Branch Protection）（AC: 1）
+  - [x] 在 GitHub 仓库设置中启用分支保护：Require status checks to pass before merging
+  - [x] 将 required checks 设为 `ci`（与 workflow job name 对齐）
+  - [x] 用一个测试 PR 验证：CI 失败时无法 merge
 
 ## Dev Notes
 
@@ -144,7 +144,8 @@ GPT-5.2 (Codex CLI)
 1. 已新增三仓库 GitHub Actions CI：`ci` job，命令门禁与 Story 设计一致。
 2. Backend：引入 `ruff`（依赖 + 配置），修复 `migrations/env.py` 的 ruff unused-import（F401）以确保 CI 可过。
 3. Runtime：新增 `npm run build:ci`（仅 `tsc && vite build`），避免 CI 打包/签名问题；本地 lint + build:ci 已验证通过。
-4. 待办：Task 5（GitHub Branch Protection / required checks）需要在 GitHub 仓库设置中手动完成。
+4. 已在三个 GitHub 仓库完成分支保护：required check 设为 `ci`，CI 失败阻止合并。
+5. Code review：通过（保留 3 个 LOW 改进建议：CI 触发范围/并发控制/跨平台矩阵）。
 
 ### File List
 

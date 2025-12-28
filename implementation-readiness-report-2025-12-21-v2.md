@@ -82,7 +82,7 @@ run: 'v2'
 
 - **Agent Manifest 格式**：PRD 允许 `CSV or JSON`；实现需明确单一权威格式，或定义同时支持时的优先级与迁移策略。
 - **“Next Step” 责任边界**：FR-RUN-02 写 Runtime 决定下一步；架构强调 LLM-as-Engine。建议在实现前明确：Runtime 是否做确定性选择（按 `stepsCompleted`），LLM 是否仅“执行当前步”。
-- **Windows 目录策略**：Windows 优先，但 epics/story 中仍出现类 Unix 路径示例；建议提前统一默认落盘路径与权限提示策略。
+- **macOS/Windows 目录策略**：macOS 优先（类 Unix 路径更常见），但 Windows 仍需明确默认落盘路径与权限/沙箱提示策略；建议提前统一默认落盘路径与 UI 文案。
 
 ## Epic 覆盖校验（Epic Coverage Validation）
 
@@ -126,7 +126,7 @@ run: 'v2'
 
 - **Story 2.3 归属不合理**：`Configure LLM API Key in Runtime` 更贴近 Runtime Settings/Execution，建议移动到 Epic 5（Settings）或 Epic 4（Runtime）。
 - **AC 缺少错误态/负向路径（抽样）**：`Story 4.1/4.6/2.4` 等未覆盖校验失败、越权、token 失效、用户提示与审计要求；建议补齐可测试 AC。
-- **Windows 优先的路径与权限叙事需落地**：例如 Project Folder 的默认位置、选择器、权限提示与沙箱拒绝文案；建议在 UX 与 epics/stories 中明确。
+- **macOS 优先下仍需落地跨平台路径与权限叙事**：例如 Project Folder 的默认位置、选择器、Windows 特有权限提示与沙箱拒绝文案；建议在 UX 与 epics/stories 中明确。
 
 ### 🟡 Minor Concerns
 
@@ -143,7 +143,7 @@ run: 'v2'
 
 ### Recommended Next Steps（进入实现前的最小动作）
 
-1. 在 `epics.md` 上做一次“快速修订”：调整 Story 2.3 归属、补齐关键错误态 AC、明确 Windows 路径策略（不需要重写全部 epics）。
+1. 在 `epics.md` 上做一次“快速修订”：调整 Story 2.3 归属、补齐关键错误态 AC、明确 macOS/Windows 路径策略（macOS 优先；不需要重写全部 epics）。
 2. 进入 Phase 4：运行 `*sprint-planning` 生成 `sprint-status.yaml`，并把上述修订点作为 Sprint 0 / Epic 1 的 DoD 约束项。
 
 ### Final Note
@@ -154,4 +154,3 @@ run: 'v2'
 - Runtime 的 Project Folder + 沙箱 + 审批/日志骨架（最小可用）
 
 并在实现过程中持续回补 AC 与 UX 细节，避免到 Epic 3/4 才发现“体验缺口”导致返工。
-
