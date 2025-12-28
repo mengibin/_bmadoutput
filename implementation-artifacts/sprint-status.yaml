@@ -90,7 +90,7 @@ development_status:
   epic-4-retrospective: optional
 
   epic-5: in-progress
-  5-0-runtime-ui-shell-and-navigation: ready-for-dev
+  5-0-runtime-ui-shell-and-navigation: in-progress
   5-1-view-current-workflow-state: backlog
   5-2-view-execution-log: backlog
   5-3-resume-execution-after-crash: backlog
