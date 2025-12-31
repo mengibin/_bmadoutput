@@ -77,12 +77,18 @@
 
 ### 2.2 Renderer（“体验与可视化”）
 
-- Package 导入/历史
-- Workflow 预览（steps 列表 + 进度）
-- Chat 流式输出
-- ToolCalls 面板（显示执行的读写/patch）
-- Artifacts 面板（生成文件列表）
-- Settings（provider/model/apiKey/timeout）
+- Start（无 Project 时）：New/Open Project + Recent Projects
+- Settings（固定在底部）：Package 信息/导入/缓存、LLM Provider、Theme
+- Project Context：
+  - Files：项目树形浏览（**侧边滑出面板**）+ 文件预览入口
+  - Works：Conversation 历史 + 新建入口（**侧边滑出面板**）
+  - Workspace（右侧持久区）：多 Tab（固定 Conversation/Chat + 多文件 Tab，支持查看/编辑/保存）
+  - Conversation 内可切换类型，并显示 workflow 启动数量与继续执行入口
+- Run Workspace：
+  - Chat 流式输出
+  - ToolCalls 面板（读写/patch 展示）
+  - Artifacts 面板（生成文件列表）
+  - Logs/Progress（基于 `@state/workflow.md` + `workflow.graph.json`）
 
 ## 3. 执行模型：ToolCalls 优先（MVP 主干）
 

@@ -803,12 +803,14 @@ So that each run has isolated state/logs while writing artifacts into my Project
 **Given** I click "Start Execution" on a loaded package
 **When** the Runtime initializes the job
 **Then** a new Run Folder is created under RuntimeStore (e.g., `<RuntimeStoreRoot>/projects/<projectId>/runs/<runId>/`)
-**And** `@state/` is mapped to the run folder state root and includes:
+**And** `@state/` is mapped to the **run-scoped** state root (`.../runs/<runId>/state/`) and includes:
   - `@state/workflow.md` (copied from package `workflow.md` and initialized with `runId`/metadata)
   - `@state/logs/execution.jsonl` (created if missing)
+**And** the Runtime persists a **run metadata record** in a project-scoped `runsIndex` (e.g., `runId`, `workflowId`, `status`, `startedAt`, `lastUpdatedAt`)
 **And** `@pkg/` is mapped to the extracted package cache (read-only) and is NOT copied into the run folder
 **And** `@project/` is mapped to the user-selected ProjectRoot and `@project/artifacts/` is created if missing
 **And** all `fs.*` operations are sandboxed to the resolved real paths of `@project/@pkg/@state`
+**And** `@state` file operations require a `runId` context (explicit parameter or active-run binding); missing context must be rejected
 
 ---
 
@@ -888,33 +890,51 @@ So that all later features (import/run/progress/log/settings) fit into a coheren
 
 **Given** I open the Runtime app
 **When** no Project is selected yet
-**Then** I can New/Open a ProjectRoot
-**And** New Project creates `artifacts/` and `ProjectRoot/.crewagent.json` (non-secret)
-**And** I can import/open a `.bmad` package (with validation feedback)
-**And** I can choose entry mode (Workflow-First / Agent-First)
+**Then** the left sidebar shows **Start** and **Settings** only (Settings pinned at the bottom)
+**And** Start lets me **New Project** or **Open Project**
+**And** New Project creates `ProjectRoot/artifacts/` and `ProjectRoot/.crewagent.json`
 
-**Given** I have selected a Project and Package
-**When** I am in the main Runtime shell
-**Then** the layout provides (at minimum):
-  - a persistent navigation area (Project / Files / Package / Workflows / Agents / Runs / Settings)
-  - a Run workspace surface with tabs/sections for: Chat, Workflow Progress, Tool Calls, Logs, Artifacts
-  - a global status area showing current Project/Package/Run and RunPhase (Running/WaitingUser/Completed/Failed)
+**Given** I open a Project
+**When** the Project loads
+**Then** the left sidebar shows the **Project name/icon**
+**And** below it shows **Files** and **Works**
+**And** Start is no longer visible while a project is active
 
-**Given** I am inside a Project
-**When** I open Files / Workflows / Agents
-**Then** I can browse and manage the full ProjectRoot directory tree, and view workflows/agents from the active package
+**Given** I open a Project
+**When** the Project has no `activePackageId` in `.crewagent.json` **or** the referenced package is missing locally
+**Then** the Runtime shows a **blocking error overlay**
+**And** it prevents entering **Works/Execution** until the package is re-imported
 
-**Given** I open Settings
+**Given** I open **Files**
+**When** I click a file
+**Then** I can view and edit the file in a **file tab**
+**And** I can save changes back to `@project`
+**And** file viewing is **extensible** (future file types via plugins)
+
+**Given** I open **Works**
+**When** I create a conversation
+**Then** I can choose entry type: **Agent / Workflow / Chat**
+**And** within a conversation I can **switch type**
+**And** I can see how many workflows were started from that conversation
+**And** I can select a workflow to continue its execution
+
+**Given** I open **Settings**
 **When** I configure Runtime
-**Then** I can manage LLM Provider, package import/cache, and theme (persisted in RuntimeStore; no secrets written into ProjectRoot)
+**Then** I can manage:
+  - **Package info & cache** (active package summary, list/remove/clear, re-validate, import `.bmad`)
+  - **LLM Provider** (OpenAI / OpenAI-compatible like DeepSeek / Azure / Ollama), model, endpoint, API key, test connection
+  - **Theme** (system/light/dark; optional high-contrast)
 
-**Given** I trigger an execution-related action (Run/Pause/Resume/Stop)
+**Given** I trigger an execution-related action inside a conversation
 **When** the UI updates
 **Then** it reflects the canonical state derived from `@state/workflow.md` + `@pkg/workflow.graph.json` (not from chat memory)
 
-**Given** I switch between Agent-First and Workflow-First
-**When** I start a run from either entry
-**Then** both converge into the same Run workspace (same progress/log panes; same stop-point semantics)
+**Given** I am inside a Project
+**When** I click **Files** or **Works** in the left nav
+**Then** a **slide-out panel** opens from the left
+**And** the main workspace stays visible on the right as **tabs**
+**And** the **first tab is fixed** as **Conversation/Chat** (cannot be closed)
+**And** opening files creates **additional tabs** for file viewing/editing (multiple tabs allowed)
 
 **References**
 - UX spec: `_bmad-output/ux-design-specification.md`（Runtime：Explain-Plan-Approve / State is Visible / Safety by Default）
@@ -1041,6 +1061,36 @@ So that I can control what tools the AI can use.
   - MCP drivers（例如 Stdio，按需启用）
 **And** I can toggle MCP drivers on/off (global)
 **And** when a MCP driver is disabled, all `mcp://...` calls are rejected with a clear error
+
+---
+
+### Story 5.8: Persist Conversations & Messages (RuntimeStore)
+
+As a **Consumer**,
+I want conversations and message history to persist per project,
+So that I can reopen a project and continue previous chats.
+
+**Acceptance Criteria:**
+
+**Given** I create a conversation in **Works**
+**When** the conversation is created
+**Then** a conversation metadata entry is persisted under RuntimeStore for the project (e.g., `conversationsIndex`)
+**And** the metadata includes `{ conversationId, entryType, createdAt, lastActiveAt, workflowRuns[] }`
+
+**Given** I send or receive messages inside a conversation
+**When** messages are produced
+**Then** they are appended to a conversation log file under RuntimeStore (e.g., `<RuntimeStoreRoot>/projects/<projectId>/conversations/<conversationId>/messages.jsonl`)
+**And** messages include `role`, `content`, `createdAt`, and tool-call fields when present
+
+**Given** I reopen the Runtime and open the same ProjectRoot
+**When** I open **Works** and select a conversation
+**Then** the conversation history is loaded from RuntimeStore and displayed
+**And** I can continue the chat and append new messages
+
+**Given** I delete a conversation
+**When** the deletion is confirmed
+**Then** its metadata and message log are removed from RuntimeStore
+**And** no conversation data is written into ProjectRoot
 
 ---
 

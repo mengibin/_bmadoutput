@@ -153,7 +153,7 @@ CrewAgent 的“定义体验”由两个子核心构成：
 
 ### Transferable UX Patterns
 
-- 左侧导航（Projects/Packages/Settings）+ 主内容 + 右侧 Inspector（属性编辑）
+- 左侧导航（Start / Project / Settings）+ 主内容 + 右侧 Inspector（属性编辑）
 - “时间线/步骤条”驱动的执行视图
 - Command Palette（快速搜索：打开项目、运行、查看日志、切换驱动）
 - 结构化日志（按 step/tool 分组），支持复制/导出
@@ -264,8 +264,8 @@ CrewAgent 的“定义体验”由两个子核心构成：
   - 中：Canvas
   - 右：Inspector（360–420px，可收起）
 - Runtime 默认两栏：
-  - 左：Projects/Packages（240px，可收起）
-  - 中：Step/Log/Artifacts Tabs
+  - 左：Project Header + Files / Works（Settings 固定底部）
+  - 中：Conversation / Logs / Artifacts Tabs
 
 ### Accessibility Considerations
 
@@ -449,7 +449,7 @@ sequenceDiagram
 ### Navigation Patterns
 
 - Builder：Dashboard / Templates / Projects / Settings
-- Runtime：Projects / Packages / Drivers / Settings / Logs（可按产品最终形态合并）
+- Runtime：Start（无 Project）/ Project（Files + Works）/ Settings（Package/LLM/Theme）
 
 ### Additional Patterns
 

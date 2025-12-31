@@ -233,13 +233,17 @@ LLM 工具只允许看到三类根：
 
 ### 7.2 Renderer（体验与可视化）
 
-- Project 选择/最近项目
-- Package 导入与选择（可多包）
-- Agent 选择与菜单 UI（支持数字/trigger 输入）
-- Chat（流式）
-- ToolCalls 面板（读写/patch 展示）
-- Artifacts 面板（扫描 `projectRoot/artifacts/` + 展示 `state.frontmatter.artifacts`）
-- Run 列表与 Resume
+- Start（无 Project 时）：New/Open Project + Recent Projects
+- Settings（固定底部）：Package 信息/导入/缓存、LLM Provider、Theme
+- Project Context：
+  - Files（ProjectRoot 树形浏览 + Markdown 预览，viewer 可扩展）
+  - Works（Conversation 历史 + 新建入口：Agent / Workflow / Chat）
+  - Conversation 内：类型切换、workflow 启动数量与继续执行入口
+- Run Workspace：
+  - Chat（流式）
+  - ToolCalls 面板（读写/patch 展示）
+  - Artifacts 面板（扫描 `projectRoot/artifacts/` + 展示 `state.frontmatter.artifacts`）
+  - Run 列表与 Resume
 
 ---
 

@@ -1,4 +1,4 @@
-# generated: 2025-12-28T20:35:46+08:00
+# generated: 2025-12-29T12:59:36+08:00
 # project: CrewAgent
 # project_key: crewagent
 # tracking_system: file-system
@@ -34,11 +34,12 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2025-12-28T20:35:46+08:00"
+generated: "2025-12-29T12:59:36+08:00"
 project: "CrewAgent"
 project_key: "crewagent"
 tracking_system: "file-system"
 story_location: "_bmad-output/implementation-artifacts"
+roadmap: "runtime-development-roadmap.md" # UI-First Development Order
 
 development_status:
   epic-1: done
@@ -76,9 +77,9 @@ development_status:
   epic-3-retrospective: optional
 
   epic-4: backlog
-  4-1-load-bmad-package-into-runtime: backlog
-  4-2-load-workflow-graph-and-step-files: backlog
-  4-3-parse-frontmatter-to-determine-current-node: backlog
+  4-1-load-bmad-package-into-runtime: done
+  4-2-load-workflow-graph-and-step-files: ready-for-dev
+  4-3-parse-frontmatter-to-determine-current-node: ready-for-dev
   4-4-compose-complete-prompt-for-llm: backlog
   4-5-call-llm-api-openai-toolcalls-local-llm: backlog
   4-6-execute-tool-calls-sandboxed-filesystem: backlog
@@ -91,11 +92,15 @@ development_status:
 
   epic-5: in-progress
   5-0-runtime-ui-shell-and-navigation: in-progress
-  5-1-view-current-workflow-state: backlog
+  5-1-view-current-workflow-state: ready-for-dev
+  5-10-files-page-project-explorer: done
+  5-2-view-execution-log: backlog
   5-2-view-execution-log: backlog
   5-3-resume-execution-after-crash: backlog
   5-4-configure-tool-call-timeout: backlog
-  5-5-configure-llm-provider-and-model: backlog
-  5-6-configure-llm-api-key-in-runtime: backlog
+  5-5-settings-page: done # Consolidates 5-5 & 5-6
+  5-5-configure-llm-provider-and-model: done # Merged into 5-5-settings-page
+  5-6-configure-llm-api-key-in-runtime: done # Merged into 5-5-settings-page
   5-7-view-and-manage-mcp-drivers: backlog
+  5-8-persist-conversations: ready-for-dev
   epic-5-retrospective: optional
