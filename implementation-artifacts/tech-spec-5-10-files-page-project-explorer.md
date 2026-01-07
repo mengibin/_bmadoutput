@@ -1,7 +1,7 @@
 # Tech Spec: Story 5.10 - Files Page (Project Explorer)
 
 **Story**: [5-10-files-page-project-explorer.md](5-10-files-page-project-explorer.md)
-**Status**: Draft
+**Status**: Implemented
 
 ## 1. Objective
 Implement the Files page as a project-only explorer: browse ProjectRoot with default focus on `@project/artifacts/` when present, preview/edit Markdown (with Open in OS), and perform basic file operations via the RuntimeStore. A viewer registry enables future file type extensions.

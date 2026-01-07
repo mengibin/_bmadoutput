@@ -1,7 +1,7 @@
 # Tech Spec: Story 5-8 – Persist Conversations & Messages
 
 ## Summary
-Add persistence layer for Conversations in RuntimeStore, with IPC exposure and appStore integration.
+Persist Conversations per project in RuntimeStore (metadata + message history), exposed via IPC and integrated with `appStore` using **lazy message loading**.
 
 ---
 
@@ -10,20 +10,33 @@ Add persistence layer for Conversations in RuntimeStore, with IPC exposure and a
 ### 1.1 Directory Structure
 ```
 $RUNTIME_DATA/projects/<projectId>/conversations/
-├── index.json                   # ConversationMeta[]
+├── index.json                   # ConversationMetadata[]
 └── <conversationId>/
     └── messages.json            # ConversationMessage[]
 ```
 
 ### 1.2 Types
 ```typescript
-interface ConversationMeta {
+type RunPhase = 'idle' | 'running' | 'waiting-user' | 'completed' | 'failed'
+
+interface ConversationRunMetadata {
+  runId: string
+  projectId: string
+  packageId: string
+  workflowRef: string
+  activeAgentId: string
+  phase: RunPhase
+  createdAt: string
+}
+
+interface ConversationMetadata {
   id: string
   title: string
   entryType: 'workflow' | 'agent' | 'chat'
   activeType: 'workflow' | 'agent' | 'chat'
   createdAt: string
   lastActiveAt: string
+  runs: ConversationRunMetadata[]
   selectedWorkflowId?: string
   selectedAgentId?: string
 }
@@ -38,26 +51,30 @@ interface ConversationMessage {
 
 ### 1.3 Methods
 
-#### `loadConversations(projectId: string): Conversation[]`
-1. Read `index.json` → get `ConversationMeta[]`
-2. For each meta, read `<id>/messages.json` → get messages
-3. Return `Conversation[]` with `runs: []` (runs loaded separately)
+#### `loadConversations(projectRoot: string): ConversationMetadata[]`
+1. Ensure `projects/<projectId>/conversations/` exists
+2. Read `index.json` (if missing → `[]`)
+3. Return `ConversationMetadata[]` (messages are not loaded here)
 
-#### `saveConversationMeta(projectId: string, meta: ConversationMeta): void`
+#### `saveConversation(projectRoot: string, conversation: ConversationMetadata): { success: boolean }`
 1. Read existing `index.json`
-2. Upsert `meta` by `id`
+2. Upsert `conversation` by `id` (prepend if new)
 3. Write back to `index.json`
-4. Ensure `<meta.id>/messages.json` exists (create if new)
+4. Ensure `<conversationId>/` exists
 
-#### `appendMessage(projectId: string, conversationId: string, message: ConversationMessage): void`
+#### `loadConversationMessages(projectRoot: string, conversationId: string): ConversationMessage[]`
+1. Read `<conversationId>/messages.json` (if missing → `[]`)
+2. Return `ConversationMessage[]`
+
+#### `appendConversationMessage(projectRoot: string, conversationId: string, message: ConversationMessage): { success: boolean }`
 1. Read `<conversationId>/messages.json`
 2. Append `message`
-3. Write back
-4. Update `lastActiveAt` in `index.json`
+3. Atomically write messages.json (tmp → rename)
+4. Update `lastActiveAt` in `index.json` (atomically)
 
-#### `deleteConversation(projectId: string, conversationId: string): void`
-1. Remove from `index.json`
-2. Delete `<conversationId>/` folder
+#### `deleteConversation(projectRoot: string, conversationId: string): { success: boolean }`
+1. Delete `<conversationId>/` folder
+2. Remove from `index.json`
 
 ---
 
@@ -65,19 +82,47 @@ interface ConversationMessage {
 
 ### preload.ts
 ```typescript
-loadConversations: (projectId: string) => ipcRenderer.invoke('conversations:load', projectId),
-saveConversation: (projectId: string, meta: ConversationMeta) => ipcRenderer.invoke('conversations:save', projectId, meta),
-appendConversationMessage: (projectId: string, conversationId: string, message: ConversationMessage) => ipcRenderer.invoke('conversations:appendMessage', projectId, conversationId, message),
-deleteConversation: (projectId: string, conversationId: string) => ipcRenderer.invoke('conversations:delete', projectId, conversationId),
+loadConversations: (payload: { projectRoot: string }) => ipcRenderer.invoke('conversations:load', payload),
+saveConversation: (payload: { projectRoot: string; conversation: ConversationMetadata }) =>
+  ipcRenderer.invoke('conversations:save', payload),
+loadConversationMessages: (payload: { projectRoot: string; conversationId: string }) =>
+  ipcRenderer.invoke('conversations:loadMessages', payload),
+appendConversationMessage: (payload: { projectRoot: string; conversationId: string; message: ConversationMessage }) =>
+  ipcRenderer.invoke('conversations:appendMessage', payload),
+deleteConversation: (payload: { projectRoot: string; conversationId: string }) =>
+  ipcRenderer.invoke('conversations:delete', payload),
 ```
 
 ### main.ts
 ```typescript
-ipcMain.handle('conversations:load', (_, projectId) => runtimeStore.loadConversations(projectId))
-ipcMain.handle('conversations:save', (_, projectId, meta) => runtimeStore.saveConversationMeta(projectId, meta))
-ipcMain.handle('conversations:appendMessage', (_, projectId, conversationId, message) => runtimeStore.appendMessage(projectId, conversationId, message))
-ipcMain.handle('conversations:delete', (_, projectId, conversationId) => runtimeStore.deleteConversation(projectId, conversationId))
+ipcMain.handle('conversations:load', (_, payload) => runtimeStore.loadConversations(payload.projectRoot))
+ipcMain.handle('conversations:save', (_, payload) => runtimeStore.saveConversation(payload.projectRoot, payload.conversation))
+ipcMain.handle('conversations:loadMessages', (_, payload) => runtimeStore.loadConversationMessages(payload.projectRoot, payload.conversationId))
+ipcMain.handle('conversations:appendMessage', (_, payload) => runtimeStore.appendConversationMessage(payload.projectRoot, payload.conversationId, payload.message))
+ipcMain.handle('conversations:delete', (_, payload) => runtimeStore.deleteConversation(payload.projectRoot, payload.conversationId))
 ```
+
+---
+
+## 3. Frontend (appStore / Works)
+
+### 3.1 Project Open (metadata only)
+- On project open: call `conversations:load` and populate `conversationsByProject[projectId]`
+- Each conversation is initialized with:
+  - `messages: []`
+  - `messagesLoaded: false`
+  - `runs[].phase` normalized to `RunPhase`
+
+### 3.2 Lazy message loading
+- When a conversation is selected: call `conversations:loadMessages` once and set `messagesLoaded: true`
+
+### 3.3 Persist hooks
+- On create/update selection/type/runs: call `conversations:save`
+- On message send: call `conversations:appendMessage`
+- On delete: call `conversations:delete`
+
+### 3.4 UI note
+- Works list provides a delete action with confirmation; deleting clears selection if it was active.
 
 ---
 

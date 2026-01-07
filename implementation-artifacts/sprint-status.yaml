@@ -1,4 +1,4 @@
-# generated: 2025-12-29T12:59:36+08:00
+# generated: 2026-01-01T21:31:19+08:00
 # project: CrewAgent
 # project_key: crewagent
 # tracking_system: file-system
@@ -34,7 +34,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2025-12-29T12:59:36+08:00"
+generated: "2026-01-01T21:31:19+08:00"
 project: "CrewAgent"
 project_key: "crewagent"
 tracking_system: "file-system"
@@ -55,7 +55,7 @@ development_status:
   2-3-implement-jwt-auth-in-backend: done
   epic-2-retrospective: optional
 
-  epic-3: done
+  epic-3: in-progress
   3-1-create-new-workflow-project: done
   3-2-add-and-edit-step-nodes-in-graph: done
   3-3-connect-steps-to-form-execution-order: done
@@ -71,36 +71,41 @@ development_status:
   3-13-generate-v1-1-workflow-graph-json: done
   3-14-generate-v1-1-bmad-json-manifest: done
   3-15-generate-v1-1-agents-json-schema-ready: done
+  6-2-project-builder-agent-editor-v1-1-markdown-fields: done
   3-18-project-builder-package-assets-management: done
+  3-19-import-bmad-package-into-builder: done
   3-16-export-v1-1-bmad-zip-bundle: done
   3-17-validate-v1-1-export-with-schemas: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
+  epic-4: in-progress
   4-1-load-bmad-package-into-runtime: done
-  4-2-load-workflow-graph-and-step-files: ready-for-dev
-  4-3-parse-frontmatter-to-determine-current-node: ready-for-dev
-  4-4-compose-complete-prompt-for-llm: backlog
-  4-5-call-llm-api-openai-toolcalls-local-llm: backlog
-  4-6-execute-tool-calls-sandboxed-filesystem: backlog
-  4-7-validate-graph-transition-and-update-frontmatter: backlog
-  4-8-create-execution-project-folder: backlog
+  4-2-load-workflow-graph-and-step-files: done
+  4-3-parse-frontmatter-to-determine-current-node: done
+  4-4-compose-complete-prompt-for-llm: done
+  4-5-call-llm-api-openai-toolcalls-local-llm: review
+  4-6-execute-tool-calls-sandboxed-filesystem: review
+  4-7-validate-graph-transition-and-update-frontmatter: review
+  4-8-create-execution-project-folder: review
   4-9-save-all-artifacts-to-project-folder: backlog
   4-10-execute-mcp-tool-calls-stdio-driver: backlog
-  4-11-agent-first-session-menu-and-command-routing: backlog
+  4-11-agent-first-session-menu-and-command-routing: review
   epic-4-retrospective: optional
 
   epic-5: in-progress
-  5-0-runtime-ui-shell-and-navigation: in-progress
-  5-1-view-current-workflow-state: ready-for-dev
+  5-0-runtime-ui-shell-and-navigation: done
+  5-1-view-current-workflow-state: done
   5-10-files-page-project-explorer: done
-  5-2-view-execution-log: backlog
-  5-2-view-execution-log: backlog
-  5-3-resume-execution-after-crash: backlog
+  5-11-enhanced-chat-interface: review
+  5-12-interactive-embedded-widgets: review
+  5-13-real-time-llm-streaming-backend: review
+  5-14-tool-policy-and-chatmode-alignment: review
+  5-2-view-execution-log: done
+  5-3-resume-execution-after-crash: done # Renamed: Workflow Progress with Real Data
   5-4-configure-tool-call-timeout: backlog
   5-5-settings-page: done # Consolidates 5-5 & 5-6
   5-5-configure-llm-provider-and-model: done # Merged into 5-5-settings-page
   5-6-configure-llm-api-key-in-runtime: done # Merged into 5-5-settings-page
   5-7-view-and-manage-mcp-drivers: backlog
-  5-8-persist-conversations: ready-for-dev
+  5-8-persist-conversations: done
   epic-5-retrospective: optional

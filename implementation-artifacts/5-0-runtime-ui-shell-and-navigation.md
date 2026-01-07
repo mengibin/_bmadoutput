@@ -1,6 +1,6 @@
 # Story 5.0: Runtime UI Shell & Navigation (IA First)
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before design-story/dev-story. -->
 
@@ -63,6 +63,12 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
    **And** the **first tab is fixed** as **Conversation/Chat** (cannot be closed)  
    **And** opening files creates **additional tabs** for file viewing/editing (multiple tabs allowed)
 
+9. **Given** I have a conversation in the Works list  
+   **When** I delete it  
+   **Then** the UI asks for confirmation  
+   **And** the conversation is removed from the list  
+   **And** its persisted data is removed from RuntimeStore
+
 ## Design Notes (Guidance)
 
 - Primary references:
@@ -110,8 +116,6 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
 - **Settings placement**: Settings is always visible at the bottom of the sidebar in both global and project contexts.
 
 **Global status bar (always visible):**
-
-
 - Active Project (name/path), Package (name/version), Run (runId + phase)
 - Primary controls: Import Package, Open Project, Settings
 - Run status indicator (phase + runId)
@@ -179,15 +183,18 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
 
 1) Inside a conversation, user can **switch type** (Agent ↔ Workflow ↔ Chat)  
 2) Conversation shows **workflows started count**  
-3) User can pick a workflow instance to continue execution (resume in unified run workspace)
+3) User can pick a workflow run to continue execution  
+   - Switching to a run shows **run details** (right side) without replacing conversation history/messages
 
 **Type Switch UI Details (explicit)**
 
 - Provide a **segmented control** in the conversation header: **Agent / Workflow / Chat**.
 - Switching types **does not** create a new conversation; it only updates `activeType`.
 - When type = **Workflow**: show workflow selector + “Start Workflow” action.
-- When type = **Agent**: show agent selector + “Start Agent” action.
-- When type = **Chat**: show a simple chat input (no workflow start required).
+- When type = **Agent**: show agent selector + “Start Agent” action; render the agent menu as **trigger buttons** (description on hover).
+- When type = **Chat**:
+  - show a simple chat input (no workflow start required)
+  - chat is “generic” (no explicit agent persona injected), but still **tool-enabled** via ToolPolicy + ToolCalls (e.g., `fs.*` for `@project/@state`)
 - The selected workflow/agent is **remembered** per conversation.
 
 #### Flow E — Files View & Preview
@@ -274,40 +281,23 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
 
 ## Tasks / Subtasks (Dev)
 
-- [ ] Update shell navigation: Start only when no project; Settings pinned bottom; Project header + Files + Works
-- [ ] Move Package view into Settings (active package summary + cache list + import/re-validate)
-- [ ] Implement Works: conversation history list + create (Agent/Workflow/Chat)
-- [ ] Support conversation type switching + workflow count + workflow resume entry
-- [ ] Files: project tree + markdown preview; viewer plugin registry for future types
-- [ ] Blocking overlay for missing package (Project context + Works)
-- [ ] Add workspace tabs (fixed Conversation + multi file tabs) and slide-out panels for Files/Works
+- [x] Update shell navigation: Start only when no project; Settings pinned bottom; Project header + Files + Works
+- [x] Move Package view into Settings (active package summary + cache list + import/re-validate)
+- [x] Implement Works: conversation history list + create (Agent/Workflow/Chat)
+- [x] Support conversation type switching + workflow count + workflow resume entry
+- [x] Agent menu: trigger buttons in Agent mode; send supports command-only (empty input)
+- [x] Conversation management: delete conversation with confirmation (and remove persisted data)
+- [x] Files: project tree + markdown preview; viewer plugin registry for future types
+- [x] Blocking overlay for missing package (Project context + Works)
+- [x] Add workspace tabs (fixed Conversation + multi file tabs) and slide-out panels for Files/Works
 
-## Code Review Notes (Current Gaps)
+## Implementation Notes (Resolved)
 
-> 目的：把“当前实现 vs Story 5.0 设计/AC”的差距明确记录下来，避免后续开发遗漏或误判状态。
-
-### Implemented (Legacy, pre-adjustment)
-
-- Shell + routing 已接入：Start / Project / Files / Runs / Package / Settings。
-- New/Open Project 已完成：创建 `artifacts/` + `.crewagent.json` 并保存 recent projects。
-- Package import/cache 已完成：导入、缓存、Remove/Clear 与绑定到项目配置。
-- Files 已接入真实树（含 `@project/@pkg/@state`）。
-- Settings 持久化：LLM config / theme / package cache 存入 RuntimeStore。
-
-### Missing / TODO (per updated Story 5.0)
-
-1) **Navigation Model**
-   - Sidebar should show Start + Settings only when no project; project header + Files + Works when project active.
-   - Package page should be removed; package info moved to Settings.
-
-2) **Works / Conversation**
-   - Conversation history list, creation entry (Agent/Workflow/Chat), type switching, workflow count, and workflow resume are missing.
-
-3) **Files Viewer Extensibility**
-   - Markdown preview is needed; viewer plugin registry for other file types not implemented.
-
-4) **Blocking Overlay Scope**
-   - Blocking overlay should target Works/Execution under new IA (Package page no longer exists).
+- Navigation model matches updated IA: Start + Settings (no project), Project header + Files/Works + Settings (project).
+- Files: project-only explorer with file tabs (Conversation fixed + multiple file tabs), markdown preview/edit/save, extensible viewer registry.
+- Works: conversation list + create (Agent/Workflow/Chat), type switching (single conversation + shared history), run list + run selector, run details without replacing chat history.
+- Agent mode: menu rendered as trigger buttons; optional detail text appended; empty input sends command-only.
+- Package binding issues show blocking overlay; Works is blocked until package is resolved.
 
 ## Testing Steps
 
@@ -331,7 +321,7 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
 5) Works → **New Conversation**  
    - 选择 Agent / Workflow / Chat  
    - 在会话中切换类型，查看 workflow 启动数量
-6) 选择某个 workflow 实例继续执行（进入运行区）
+6) 选择某个 workflow run 继续执行（右侧显示 run details；聊天区保持同一份历史消息）
 7) Files：树形结构浏览 Project  
    - 点击文件打开新的文件 Tab（可多开）  
    - Markdown 文件可预览并可编辑保存  
@@ -340,6 +330,8 @@ so that all later features (import/run/progress/log/settings) fit into a coheren
    - 重启应用后设置仍保持
 9) Settings：Cached Packages 执行 Remove/Clear  
    - 若 activePackageId 绑定但 cache 缺失，应出现阻断提示
+10) Works：删除 conversation  
+   - 确认弹窗出现；删除后列表与持久化数据同步移除
 
 ### Optional Verification
 

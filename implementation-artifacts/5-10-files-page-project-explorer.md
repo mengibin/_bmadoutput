@@ -23,6 +23,7 @@ so that I can verify generated artifacts, edit configurations, and organize my w
    **Then** a **new file tab** opens after the fixed Conversation tab  
    **And** the file tab shows **view/edit** content with a Save action:
    - `.md` renders as Markdown and offers an **Open in OS** action.
+   - `.json`, `.yaml`, `.xml` render with syntax highlighting and offer an **Open in OS** action.
    - Unsupported types show a "No preview available" state with an **Open in OS** action.
 
 4. **Given** the Files page
@@ -36,7 +37,7 @@ so that I can verify generated artifacts, edit configurations, and organize my w
 ## Validation Notes
 - `RuntimeStore.getFileTree` already exists (see `runtimeStore.ts`).
 - IPC channels for `files:getTree`, `files:read`, `files:createFolder`, `files:createFile`, `files:renamePath`, `files:deletePath`, `files:openInOs` are already wired.
-- UI currently supports Project/Package/State tabs; this story removes non-project roots to match the updated IA.
+- Files UI is **project-only** (no Package/State roots) to match the updated IA.
 
 ## Technical Context
 
@@ -47,7 +48,7 @@ so that I can verify generated artifacts, edit configurations, and organize my w
 - **Tech Spec**: `_bmad-output/implementation-artifacts/tech-spec-5-10-files-page-project-explorer.md`
 
 ## Dependencies
-- Story 5-0 (Shell/Navigation) - *In Progress*
+- Story 5-0 (Shell/Navigation) - *Done*
 
 ## Design
 
@@ -65,6 +66,7 @@ so that I can verify generated artifacts, edit configurations, and organize my w
   - Selected item highlight + icon by file type.
 - **Preview/Edit**:
   - Markdown renderer or plain text editor for `.md`, with **Open in OS** action.
+  - Syntax highlighting viewer for `.json`, `.yaml`, `.xml`.
   - Fallback "No preview available" + Open in OS.
   - Editable for project files; Save writes to `@project`.
 - **Actions**:
@@ -105,8 +107,11 @@ so that I can verify generated artifacts, edit configurations, and organize my w
 
 ## Tasks / Subtasks
 
-- [ ] Update Files page to **project-only** tree (remove Package/State tabs).
-- [ ] Implement viewer registry + Markdown viewer.
-- [ ] Wire toolbar/context actions to IPC file ops (including Save/Write).
-- [ ] Add empty/error states for file selection and read failures.
-- [ ] Add runtime store tests for sandboxed file operations.
+- [x] Update Files page to **project-only** tree (remove Package/State tabs).
+- [x] Implement viewer registry + Markdown viewer.
+- [x] Implement viewers for JSON, YAML, and XML (syntax highlighting).
+- [x] Support Mermaid diagrams in Markdown preview.
+- [x] Implement syntax highlighting for standard code blocks in Markdown.
+- [x] Wire toolbar/context actions to IPC file ops (including Save/Write).
+- [x] Add empty/error states for file selection and read failures.
+- [x] Add runtime store tests for sandboxed file operations.

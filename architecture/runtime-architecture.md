@@ -212,7 +212,7 @@ LLM 工具只允许看到三类根：
 
 - `PromptComposer`
   - `systemBase`：通用运行规则 + mount 说明
-  - `systemPolicy`：tool policy（fs/mcp 限额等）
+  - `systemPolicy`：tool policy（默认全开；由 Settings 的 SystemToolPolicy + agent.tools 合并，包含 fs/mcp 开关与限额等）
   - `systemPersona`：agent persona 或 systemPrompt
   - `userLauncher`：要求按 graph 执行、写 artifacts 到 project、更新 state
   - 示例与拼装方式：见 `_bmad-output/tech-spec/prompt-composer-examples.md`
@@ -234,7 +234,7 @@ LLM 工具只允许看到三类根：
 ### 7.2 Renderer（体验与可视化）
 
 - Start（无 Project 时）：New/Open Project + Recent Projects
-- Settings（固定底部）：Package 信息/导入/缓存、LLM Provider、Theme
+- Settings（固定底部）：Package 信息/导入/缓存、LLM Provider、Theme、SystemToolPolicy（系统级 tools 开关与限额）
 - Project Context：
   - Files（ProjectRoot 树形浏览 + Markdown 预览，viewer 可扩展）
   - Works（Conversation 历史 + 新建入口：Agent / Workflow / Chat）
@@ -253,7 +253,7 @@ LLM 工具只允许看到三类根：
 
 - mount alias → realpath → 前缀校验（防 `..` / symlink escape）
 - `@pkg` 只读
-- 单次读写大小限制（由 agent.tools.fs.maxReadBytes/maxWriteBytes + 全局默认合并）
+- 单次读写大小限制（由 Settings 的 SystemToolPolicy + agent.tools 合并决定）
 
 ### 8.2 状态写入一致性
 

@@ -610,7 +610,34 @@ So that the exported `.bmad` contains everything needed by Runtime without relyi
 
 ---
 
+### Story 3.19: Import .bmad Package into Builder
+
+As a **Creator**,
+I want to import an existing `.bmad` package into the Builder,
+So that I can edit and extend workflows created by others or migrate packages between projects.
+
+**Acceptance Criteria:**
+
+**Given** I am in the ProjectBuilder view
+**When** I click "Import Package" and select a `.bmad` file
+**Then** the Builder extracts and validates the package against v1.1 schemas
+**And** a new project is created with the package name and all workflows/agents/assets loaded
+**And** validation failures show actionable error messages (file path + schema pointer)
+
+**Given** a project with the same name already exists
+**When** I import a package
+**Then** the Builder prompts me to rename or cancel
+
+**Given** the `.bmad` package contains multiple workflows
+**When** the import completes
+**Then** all workflows are imported with their graphs, steps, and agent assignments preserved
+
+> 详细规格见：`_bmad-output/implementation-artifacts/3-19-import-bmad-package-into-builder.md`
+
+---
+
 ## Epic 4: Workflow Execution Engine
+
 
 **Goal**: Consumers can load and execute `.bmad` workflows locally（Project-First：产物写入 ProjectRoot；state/logs 存入 RuntimeStore）。
 
@@ -942,18 +969,48 @@ So that all later features (import/run/progress/log/settings) fit into a coheren
 
 ---
 
-### Story 5.1: View Current Workflow State
+### Story 5.10: Files Page (Project Explorer)
 
 As a **Consumer**,
-I want to see the current workflow state in the Runtime UI,
-So that I know the execution progress.
+I want to view and manage files in my Project,
+So that I can verify generated artifacts, edit configurations, and organize workflow files.
 
 **Acceptance Criteria:**
 
-**Given** a workflow is loaded or executing
-**When** I look at the main panel
-**Then** I see which nodes are completed, in-progress, and pending (derived from `workflow.graph.json` + `@state/workflow.md` frontmatter)
-**And** the current node is highlighted
+**Given** a loaded Project
+**When** I navigate to **Files**
+**Then** a **slide-out panel** opens with a file tree rooted at **ProjectRoot** (default focus `@project/artifacts/` when present)
+**And** selecting a file opens a **file tab** after the fixed Conversation tab
+
+**Given** I open a markdown file
+**When** it is previewed
+**Then** it renders as Markdown and provides an **Open in OS** action
+**And** unsupported types show a “No preview available” state with **Open in OS**
+
+**Given** I perform file actions
+**When** I create/rename/delete files or folders
+**Then** operations are scoped to **ProjectRoot** only and path traversal is rejected
+**And** file viewing is **extensible** via a viewer registry by file extension
+
+**Dependencies**
+- Story 5.0 (UI Shell & Navigation)
+
+---
+
+### Story 5.1: View Current Workflow State
+
+As a **Consumer**,
+I want to preview the workflow graph in the Runtime UI before I start,
+So that I understand what will happen when I click Start.
+
+**Acceptance Criteria:**
+
+**Given** I am in a Project and have selected a workflow conversation (before starting a run)
+**When** I view the workflow graph
+**Then** I see the workflow flow graph (nodes + edges) so I can understand the overall process
+**And** the graph does not expose per-step Markdown content/details in this story
+
+*Note*: Overlaying execution status (completed / in-progress / pending) and highlighting the current node should be implemented after run-scoped `@state` is available (see Story 4-8 / 4-3).
 
 ---
 
@@ -1091,6 +1148,83 @@ So that I can reopen a project and continue previous chats.
 **When** the deletion is confirmed
 **Then** its metadata and message log are removed from RuntimeStore
 **And** no conversation data is written into ProjectRoot
+
+
+
+### Story 5.11: Enhanced Chat Interface Foundation (Streaming & Iceberg Model)
+
+As a **Consumer**,
+I want a modern chat experience with streaming responses and a clean "Iceberg" view that hides internal thinking details,
+So that I can focus on the results without being overwhelmed by logs.
+
+**Acceptance Criteria:**
+
+**Given** the LLM is generating a response
+**When** chunks are received
+**Then** the UI updates progressively (Streaming)
+**And** "Thinking" blocks or "Tool Call" blocks are collapsed by default (showing only discrete animated indicators)
+**And** I can click indicators to view details (or be directed to the Log tab)
+
+**Given** I am in a chat
+**When** Markdown content is rendered
+**Then** it uses a dedicated `MessageMarkdown` renderer isolated from file viewers
+**And** it supports standard Markdown (code blocks, lists, bold/italic) with chat-optimized styling
+
+---
+
+### Story 5.12: Interactive Embedded Widgets (Forms & Selection)
+
+As a **Consumer**,
+I want to interact with structured widgets (forms, lists, confirmations) directly in the chat stream,
+So that I can provide precise inputs to the Agent (e.g. filling missing info, selecting execution items, providing feedback).
+
+**Acceptance Criteria:**
+
+**Given** the Agent needs structured user input (completing info, selecting items, feedback)
+**When** it triggers an interactive widget request (via specific ToolCall or structured message)
+**Then** the Chat UI renders the corresponding widget instead of plain text:
+  - **Form Widget**: Based on JSON Schema (for generic info gathering)
+  - **Selection Widget**: List of items with checkboxes/radio buttons (for "Select items to execute")
+  - **Action Proposal Widget**: A plan/summary with "Approve" or "Modify" options (for "Next recommended actions")
+  - **Multi-Item Feedback Widget**: List of items with per-item action options (for "Review each suggestion")
+  - **Action Selection Widget**: List of actions with "Continue" button (for "Choose next workflow/step")
+
+**Given** I interact with a widget
+**When** I submit my choice/input
+**Then** the data is validated against the schema
+**And** the result is sent back to the Agent as a structured response
+**And** the widget enters a "Read-Only/Submitted" state to prevent re-submission
+
+---
+
+### Story 5.13: Real-Time LLM Streaming Backend (SSE + IPC)
+
+As a **Consumer**,
+I want the runtime backend to stream LLM responses token-by-token,
+So that the chat UI updates in real time without waiting for the full response.
+
+**Acceptance Criteria:**
+
+**Given** the selected LLM provider supports streaming (OpenAI / OpenAI-compatible)
+**When** the runtime requests `chat.completions` with `stream: true`
+**Then** the backend parses SSE chunks and emits IPC events in order:
+  - `llm:stream-start` (with stable `messageId`)
+  - `llm:stream-chunk` (with text `delta` and optional `partType`)
+  - `llm:stream-end` once the final message is assembled
+
+**Given** the assistant requests tool calls
+**When** tool execution begins/ends
+**Then** the backend emits `llm:stream-tool-start` and `llm:stream-tool-end`
+**And** tool end includes `{ result, duration }`
+
+**Given** the provider does not support streaming or a stream error occurs
+**When** the runtime retries or falls back
+**Then** the request completes via the non-stream path
+**And** the UI still receives a final assistant message (no regressions)
+
+**Given** a run is aborted or canceled
+**When** streaming is in progress
+**Then** the stream stops cleanly and no dangling IPC listeners remain
 
 ---
 

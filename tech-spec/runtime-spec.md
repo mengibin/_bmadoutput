@@ -78,7 +78,7 @@
 ### 2.2 Renderer（“体验与可视化”）
 
 - Start（无 Project 时）：New/Open Project + Recent Projects
-- Settings（固定在底部）：Package 信息/导入/缓存、LLM Provider、Theme
+- Settings（固定在底部）：Package 信息/导入/缓存、LLM Provider、Theme、SystemToolPolicy（系统级 tools 开关与限额）
 - Project Context：
   - Files：项目树形浏览（**侧边滑出面板**）+ 文件预览入口
   - Works：Conversation 历史 + 新建入口（**侧边滑出面板**）
@@ -98,7 +98,7 @@
    - `@project`：用户工程目录（读写）
    - `@pkg`：当前 `.bmad` 包内容（只读）
    - `@state`：当前 run 状态（读写但用户不可见，核心文件 `@state/workflow.md`）
-2) Runtime 发送初始指令（system 级约束 + tool policy），要求 LLM：
+2) Runtime 发送初始指令（system 级约束 + tool policy；默认全开，可由 Settings 的 SystemToolPolicy 配置），要求 LLM：
    - 读取 `workflow.md` frontmatter 的 `currentNodeId/stepsCompleted/variables`
    - 根据 `workflow.graph.json` 的出边决定 next node，并读取对应 `steps/<nodeId>.md`
    - 完成本步产出后，**用普通文件工具**更新 `workflow.md` frontmatter（追加 `stepsCompleted`、更新 `currentNodeId/variables/decisionLog/updatedAt/artifacts`）

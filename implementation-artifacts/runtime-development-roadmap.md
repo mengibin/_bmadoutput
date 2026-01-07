@@ -13,15 +13,16 @@ This document outlines the development sequence for the CrewAgent Runtime enviro
 ## Phase 1: UI Foundation & Configuration
 *Goal: A running application that looks complete, even if it doesn't "run" workflows yet.*
 
-### 1. Story 5-0: Runtime UI Shell and Navigation (Active)
+### 1. Story 5-0: Runtime UI Shell and Navigation
 - **Scope**: Start/Settings shell, Project context (Project header + Files/Works), slide-out panels, fixed Conversation tab, blocking package error overlay.
 - **Why**: Establishes the application skeleton.
-- **Status**: *In Progress*
+- **Status**: *Done*
 
 ### 2. Story 5-10: Files Page (Project Explorer)
 - **Scope**: Project-only file tree, file preview/edit in tabs (after fixed Conversation), Open in OS, basic file operations (default to `@project/artifacts/` when present).
 - **Why**: Essential for users to verify project files and generated artifacts.
 - **Dependencies**: Basic IPC for file system (partly ready).
+- **Status**: *Done*
 
 ### 3. Story 5-5 & 5-6: LLM & Settings Configuration
 - **Scope**: Settings UI for package info/cache, LLM provider config (model/endpoint/API key/test), and theme.
@@ -35,12 +36,14 @@ This document outlines the development sequence for the CrewAgent Runtime enviro
 
 ### 4. Story 5-1: View Current Workflow State (Graph UI)
 - **Scope**:
-    - **Graph View**: Visual rendering of nodes and edges (using React Flow or similar).
-    - **Step Detail**: Side panel showing Markdown content of the selected/active node.
+    - **Graph View**: Visual rendering of nodes and edges (React Flow).
+    - **Pre-Start Preview**: Shown before starting a run so users understand the flow.
+    - **No Step Detail Exposure**: Do not surface per-step Markdown content/details in this phase.
 - **Integration**:
-    - Connect to **Story 4-2 (Load Workflow)**: Populate Graph data.
-    - Connect to **Story 4-3 (Parse Frontmatter)**: Highlight `currentNodeId`.
+    - Use **Package workflow.graph.json** to populate the graph.
+    - *Future*: After **Story 4-8 / 4-3**, overlay run progress and highlight `currentNodeId`.
 - **Note**: This is the "Monitor" of the system.
+- **Status**: *Done*
 
 ### 5. Story 4-11: Agent Session Menu (The "Start" Button)
 - **Scope**: UI for the "Agent" tab or "Chat" panel start screen.
@@ -54,15 +57,16 @@ This document outlines the development sequence for the CrewAgent Runtime enviro
 ### 6. Story 5-8: Persist Conversations & Messages
 - **Scope**: Persist conversation metadata + message history per project in RuntimeStore (load on reopen, append on new messages).
 - **Why**: Makes **Works** durable and allows continuing past chats.
+- **Status**: *Done*
 
 ### 7. Story 5-2: View Execution Log
 - **Scope**: A scrolling log panel (terminal-like or structured list).
 - **Why**: Users need feedback when the Execution Core starts running.
 - **Mocking**: Initially populate with static dummy logs to style the component.
 
-### 8. Story 5-3: Resume/Recover UI
-- **Scope**: UI states for "Crashed", "Paused", or "Resumable".
-- **Why**: Handling edge cases in the UI early prevents "white screen" issues later.
+### 8. Story 5-3: Workflow Progress with Real Data
+- **Scope**: Connect Progress UI to real `@state/workflow.md` data (currentNodeId, stepsCompleted).
+- **Why**: Users need to see actual execution progress, not mock data.
 
 ---
 
@@ -101,8 +105,5 @@ This document outlines the development sequence for the CrewAgent Runtime enviro
 ---
 
 ## Summary of Immediate Next Steps
-1.  **Finish** Story 5-0 (Shell/Nav + Works entry + fixed Conversation tab + blocking package overlay).
-2.  **Implement** Story 5-10 (Files Page) - *High visual impact*.
-3.  **Implement** Story 5-5/5-6 (Settings) - *Low effort, high utility*.
-4.  **Implement** Story 5-8 (Conversation Persistence) - *Keeps Works history across restarts*.
-5.  **Implement** Story 5-1 (Graph View) - *Connects Backend 4.2/4.3 to UI*.
+1. **Create/Design** Story 4-8 (Run Folder & Run-Scoped State) - *Enables per-run isolation and resume correctness*.
+2. **Design/Implement** Story 4-4 (Prompt Composition) - *Required before Story 4-5 (LLM calls) can run safely*.

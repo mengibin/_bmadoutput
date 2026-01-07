@@ -56,6 +56,12 @@ SessionMode:
     └─Failed
 ```
 
+> 备注：UI 还支持一个 **ChatMode**（ConversationType=`chat`）用于“随便聊”：
+> - 不绑定 workflow/run，不注入 agent persona（保持通用聊天体验）
+> - 但仍可使用 tools（默认开启；由 SystemToolPolicy（Settings）+ agent.tools 合并出的 ToolPolicy 控制可见性与限额，比如允许 `fs.*` 读写 @project/@state）
+> - PromptComposer：`mode=chat`（BaseRules(conversation) + ToolPolicy + USER_INPUT）
+> - `USER_INPUT` 在 chat 模式下不需要 `forNodeId`
+
 ```
 RunPhase:
   Running

@@ -19,6 +19,17 @@ This document is used to track bugs in the project.
 
 ## Resolved Bugs
 
+### [BUG-20260104-191500] Package Import fails to switch active package in open project
+- **Status**: ✅ Verified
+- **Priority**: Medium
+- **Date**: 2026-01-04
+- **Resolved**: 2026-01-04
+- **Description**:
+  If the project is opened, when user import a new package in setting panel, the open project should not be switched to the new package. The opened project should bind the old package.
+
+- **Resolution**:
+  Updated `importPackage` in `appStore.ts`. It now checks if a project is active. If so, it only adds the imported package to the cache without changing the `activePackage` or `activeProjectConfig`. If no project is open, it sets the new package as active.
+
 ### [BUG-20251230-151739] 文件列表显示错误
 - **Status**: ✅ Verified
 - **Priority**: Medium

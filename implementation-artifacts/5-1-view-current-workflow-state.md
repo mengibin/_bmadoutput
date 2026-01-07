@@ -3,7 +3,7 @@
 ## Overview
 **Epic**: 5 – Runtime Frontend  
 **Priority**: Phase 2 (Visualization)  
-**Status**: `ready-for-dev`
+**Status**: `done`
 
 ## Goal
 Visualize the currently selected workflow definition as an interactive node graph, serving as the "map" for the user to understand execution flow.
@@ -16,9 +16,10 @@ Visualize the currently selected workflow definition as an interactive node grap
 1. **Graph Rendering**: Render the selected workflow's graph using React Flow.
     - Nodes: Steps, Start, End.
     - Edges: Connections between steps.
-2. **Interactive Selection**: Clicking a node shows its details (Markdown content) in a side panel or popover.
-3. **Data Source**: Load graph data from the active Package's `workflow.graph.json` file.
-4. **Layout**:
+2. **Pre-Start Preview**: In Workflow mode (before starting a run), users can preview the graph to understand what will happen after they click Start.
+3. **No Step Detail Exposure**: The graph is for understanding the flow; it should not expose per-step Markdown files/content to end users in this story.
+4. **Data Source**: Load graph data from the active Package's `workflow.graph.json` file.
+5. **Layout**:
     - "Works" page should have a split view or tab to show the Graph.
     - *Decision*: Since "Works" is the conversation view, the Graph should be a "Third Column" or a "Drawer" compliant with the UI shell, OR a toggle view in the main area updates.
     - *Refined Criteria*: Add a "View Graph" toggle/tab in the Conversation header. When active, show the Graph in the main content area (replacing or split with chat).
@@ -34,4 +35,22 @@ Visualize the currently selected workflow definition as an interactive node grap
 - **React Flow**: Use custom node types for "Step" to display name/id.
 
 ## Related Artifacts
-- [Tech Spec](file:///Users/mengbin/code/GPT/CrewAgent/_bmad-output/implementation-artifacts/tech-spec-5-1-view-current-workflow-state.md) (to be created)
+- Tech Spec: `_bmad-output/implementation-artifacts/tech-spec-5-1-view-current-workflow-state.md`
+
+## Implementation Notes
+- UI entry: **Works → Conversation header → Graph** toggle.
+- Graph source: `activePackage.workflows[workflowId].graph` (read via `files:read` + `@pkg/`).
+- Before starting a run, the main panel defaults to Graph view for workflow conversations, while the right panel still shows the Start controls.
+
+## Test Plan
+
+### Manual Verification
+1. Open a project with an active package (e.g. `create-story-micro`).
+2. Go to **Works**, select a workflow conversation.
+3. Confirm the workflow graph is visible before clicking Start (or toggle **Graph** in the conversation header).
+4. Confirm the workflow graph renders and is navigable (pan/zoom).
+5. Click nodes; confirm it does not open per-step Markdown content.
+6. Toggle Graph off; confirm chat history remains unchanged.
+
+### Build Verification
+- `npm -C crewagent-runtime run build:ci`

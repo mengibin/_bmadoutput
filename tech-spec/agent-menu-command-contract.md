@@ -354,6 +354,7 @@ type ActionRef =
 ### 6.1 ShowMenu
 
 - UI 渲染 `agent.menu` 的可见项（按原顺序）
+- UI 文案建议：按钮主标签优先使用 `menuItem.trigger`（fallback 为 description），`description` 仅作为说明（tooltip/副标题）
 - 不调用 LLM（除非你希望 LLM 用 persona 复述菜单；推荐 UI 直接渲染，减少 token）
 
 ### 6.2 StartWorkflow
@@ -392,9 +393,7 @@ type ActionRef =
 
 - 不启动 workflow
 - 以 agent persona 对话
-- 工具策略建议：
-  - 默认只开 `fs.read`（读 project/artifacts/）用于回答问题
-  - 写入必须显式经命令触发（避免“聊天误改项目”）
+- 工具策略：默认开启所有可用 tools；由 Settings 的 SystemToolPolicy 控制系统级开关/限额，agent.tools 可进一步收紧（如需更安全，可在 UI 侧对写入类 tool 增加确认/差异展示）
 
 ---
 

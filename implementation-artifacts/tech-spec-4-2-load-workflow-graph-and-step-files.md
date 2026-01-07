@@ -41,20 +41,20 @@ Implement `RuntimeStore.loadWorkflow(packageId, workflowId)` which:
 
 ### Tasks
 
-- [ ] **Setup**: Install `vitest` and configure `vite.config.ts` for testing.
-- [ ] Define `WorkflowDefinition` interface in `RuntimeStore.ts`.
-- [ ] Implement `validateWorkflowGraph` private method using `ajv`.
-- [ ] Implement `loadWorkflow(packageId, workflowId)` in `RuntimeStore`.
-- [ ] **Test**: Create `electron/stores/runtimeStore.test.ts` to unit test `loadWorkflow` (mocking fs/adm-zip if needed, or using integration style with temp files).
-- [ ] Expose `workflow:load` via IPC.
-- [ ] Add temporary logging in `PackagePage.tsx` to verify loading.
+- [x] **Setup**: Install `vitest` and configure runtime tests.
+- [x] Define `WorkflowDefinition` interface in `RuntimeStore.ts`.
+- [x] Implement `validateWorkflowGraph` + integrity checks in `RuntimeStore`.
+- [x] Implement `loadWorkflow(packageId, workflowId)` in `RuntimeStore`.
+- [x] **Test**: Add `electron/stores/runtimeStore.test.ts` coverage for loadWorkflow (positive + negative).
+- [x] Expose `workflow:load` via IPC.
+- [ ] Add temporary logging in `PackagePage.tsx` to verify loading (optional / not required once tests pass).
 
 ### Acceptance Criteria
 
-- [ ] **Unit Tests Pass**: `npm run test` passes for `RuntimeStore`.
-- [ ] **Valid**: Loading `create-story-micro` works and returns graph + all step contents.
-- [ ] **Invalid Schema**: Loading a graph with missing `entryNodeId` fails.
-- [ ] **Missing File**: Loading a graph referencing a non-existent `.md` file fails.
+- [x] **Unit Tests Pass**: `npm run test` (vitest) passes for `RuntimeStore`.
+- [x] **Valid**: Loading `create-story-micro` works and returns graph + all step contents.
+- [x] **Invalid Graph**: Loading a graph with invalid edges/nodes fails with a clear error.
+- [x] **Missing File**: Loading a graph referencing a non-existent `.md` file fails.
 
 ## Additional Context
 

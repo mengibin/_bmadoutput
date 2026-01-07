@@ -42,6 +42,10 @@
 
 > 说明：本文不依赖 `developer` role（不同 Provider 支持度不一），统一使用 `system`/`user`。
 
+补充（ChatMode / ConversationType=`chat`）：
+- 仍使用同样的 `messages/tools/tool_calls/tool` 协议与 ToolHost 回填规则。
+- PromptComposer 采用 `mode=chat`：不发送 RUN_DIRECTIVE/NODE_BRIEF；也不注入 agent persona（保持通用聊天），但会发送 ToolPolicy（默认开启所有可用 tools；由 Settings 的 SystemToolPolicy 控制系统级开关/限额，agent.tools 可进一步收紧）。
+
 ### 3.2 工具调用与回填的“硬规则”
 
 当 assistant 返回 `tool_calls` 时：
@@ -164,6 +168,9 @@ USER_INPUT
 - forNodeId: step-01-select-story
 <raw user text>
 ```
+
+- `mode=run`（workflow 流程中）建议包含 `- forNodeId: <currentNodeId>`，用于把用户回答绑定到当前节点。
+- `mode=agent/chat`（非流程对话）不需要绑定节点：省略 `forNodeId` 行，直接附上 `<raw user text>` 即可。
 
 ## 6. ToolHost `fs.*`：工具返回结构（建议统一 ToolResult）
 

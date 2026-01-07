@@ -1,6 +1,6 @@
 # Story 4.2: Load Workflow Graph and Step Files
 
-Status: ready-for-design
+Status: done
 
 ## Story
 
@@ -42,53 +42,55 @@ so that I have all necessary data in memory to start an execution session.
 - **Path Resolution**: Step files are relative paths in the zip/package structure. `RuntimeStore` knows the package root.
 - **Memory**: The loaded definition is ephemeral (per session). It doesn't need to be persisted to disk again, but loaded into the active `Run` state in memory.
 
+## Design
+
+### Summary
+- `RuntimeStore.loadWorkflow(packageId, workflowId)` 异步定位并解析 `workflow.graph.json`，返回 `WorkflowDefinition`（`graph` + `steps` 映射）。
+- 使用 `ajv`(2020) 校验 v1.1 schema，并做逻辑校验（`entryNodeId` 存在、`nodes/edges` 引用有效、`node.file` 必填）。
+- 遍历所有 `nodes`，通过 `resolveInsideDir(packageRoot, node.file)` 解析路径并并行读取 `.md`，组装 `steps: Record<nodeId, string>`。
+- Tech Spec: _bmad-output/implementation-artifacts/tech-spec-4-2-load-workflow-graph-and-step-files.md
+
+### UX / UI
+- N/A（纯后端逻辑）
+
+### API / Contracts
+- IPC: `workflow:load`
+  - 请求: `{ packageId: string, workflowId: string }`
+  - 响应:
+    - 成功: `{ success: true, definition: { graph: WorkflowGraph, steps: Record<nodeId, string> } }`
+    - 失败: `{ success: false, error: { code: string, message: string, details?: unknown } }`
+- 失败时返回结构化错误（`code/message/details`），用于 UI 提示与可编程处理。
+
+### Data / Storage
+- 读取 RuntimeStore 的包缓存目录（`packages/<packageId>/...`），不写磁盘。
+- `WorkflowDefinition` 仅存内存（Run 会话级）。
+
+### Errors / Edge Cases
+- `workflow.graph.json` 缺失或 JSON 解析失败 → 报错并阻止启动。
+- Schema 不支持/校验失败（含 `entryNodeId`、`nodes/edges` 引用无效）→ 返回明确错误详情。
+- `node.file` 路径越界或文件缺失/不可读 → 报错 `"File not found: <path>"`。
+- 任一步骤文件读取失败 → 整体失败（避免半加载）。
+
+**Error Codes（示例）**：
+- `PACKAGE_NOT_FOUND` / `WORKFLOW_NOT_FOUND`
+- `GRAPH_PATH_INVALID` / `GRAPH_NOT_FOUND` / `GRAPH_JSON_INVALID`
+- `GRAPH_SCHEMA_INVALID` / `GRAPH_INTEGRITY_INVALID`
+- `STEP_FILE_UNSUPPORTED` / `STEP_FILE_PATH_INVALID` / `STEP_FILE_NOT_FOUND` / `STEP_FILE_READ_FAILED`
+
+### Test Plan
+- 单元测试：使用 `create-story-micro` fixture，验证 `entryNodeId` 与 `steps` map。
+- 负向测试：缺失 graph、schema 不匹配、edge 指向不存在节点、step 文件缺失。
+- 手动：通过 IPC 调用 `workflow:load`，返回 graph + steps。
+
 ## Tasks / Subtasks
 
-- [ ] Define `WorkflowDefinition` and `StepContent` interfaces in `RuntimeStore`.
-- [ ] Implement `loadWorkflow(packageId, workflowId)` in `RuntimeStore`.
-- [ ] Implement `validateGraphIntegrity` helper (nodes vs edges vs entry).
-- [ ] Implement `loadStepFiles` helper (parallel read of .md files).
-- [ ] Add error handling for "Graph not found", "Step file missing", "Invalid Schema".
-- [ ] Expose via IPC `workflow:load`.
+- [x] Define `WorkflowDefinition` and `StepContent` interfaces in `RuntimeStore`.
+- [x] Implement `loadWorkflow(packageId, workflowId)` in `RuntimeStore`.
+- [x] Implement `validateGraphIntegrity` helper (nodes vs edges vs entry).
+- [x] Implement `loadStepFiles` helper (parallel read of .md files).
+- [x] Add error handling for "Graph not found", "Step file missing", "Invalid Schema".
+- [x] Expose via IPC `workflow:load`.
 
 ## References
 
 - Tech Spec: _bmad-output/implementation-artifacts/tech-spec-4-2-load-workflow-graph-and-step-files.md
-
-## Design
-
-### Summary
-- Implementation follows the Tech Spec.
-- Key logical separation: `RuntimeStore` handles data loading; Execution Engine (future story) handles logic.
-- Tech Spec: _bmad-output/implementation-artifacts/tech-spec-4-2-load-workflow-graph-and-step-files.md
-
-### UX / UI
-- N/A (Backend logic).
-
-### API / Contracts
-- IPC Channel: `workflow:load`
-- Returns: `WorkflowDefinition`
-
-### Data / Storage
-- Read-only access to package files.
-- In-memory representation of `WorkflowDefinition`.
-
-### Errors / Edge Cases
-- Invalid Schema -> Error with details.
-- Missing File -> Error "File not found: <path>".
-- Invalid JSON -> Error "Parse error".
-
-### Test Plan
-### Automated Tests
-- **Fixture**: `create-story-micro` (v1.1 reference package).
-- **Unit Test**: `electron/stores/runtimeStore.test.ts` > `should load workflow graph and steps`.
-- **Assertions**:
-  - `loadWorkflow` returns `success: true`.
-  - `definition.graph.entryNodeId` matches fixture (`step-01-select-story`).
-  - `definition.steps` contains content for `step-01-select-story`.
-
-### Manual Verification
-1. Start the app.
-2. Import `create-story-micro` zip.
-3. Open Developer Tools console.
-4. Verify `window.ipcRenderer.invoke('package:loadWorkflow', ...)` returns valid graph object.

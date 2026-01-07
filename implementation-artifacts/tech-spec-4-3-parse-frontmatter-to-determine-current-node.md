@@ -1,7 +1,7 @@
 # Tech-Spec: Parse Frontmatter to Determine Current Node
 
 **Created:** 2025-12-29
-**Status:** Ready for Development
+**Status:** Done
 **Source Story:** _bmad-output/implementation-artifacts/4-3-parse-frontmatter-to-determine-current-node.md
 
 ## Overview
@@ -10,11 +10,11 @@
 The Runtime needs to know the current state of a workflow execution (e.g. which step to run next, what variables are set) to resume or start a session. This state is stored in the YAML Frontmatter of the `workflow.md` file (for BMad v1.1). We need a reliable way to parse this.
 
 ### Solution
-Integrate `gray-matter` into the Electron Main process (`RuntimeStore`) to parse the `workflow.md` file. Extract `currentNodeId` and `variables` and structure them into a `WorkflowState` object.
+Integrate `gray-matter` into the Electron Main process (`RuntimeStore`) to parse the run-scoped `@state/workflow.md` file. Validate frontmatter against `schemas/workflow-frontmatter.schema.json` (v1.1), extract `currentNodeId/stepsCompleted/variables/decisionLog/artifacts`, and return a normalized `WorkflowState`. If `currentNodeId` is empty, default to `workflow.graph.json.entryNodeId`. If `currentNodeId` does not exist in the graph, block execution with a fix hint.
 
 ### Scope (In/Out)
-- **In**: Parsing existing `workflow.md` files, extracting specific frontmatter fields.
-- **Out**: Modifying/Writing frontmatter (handled in a future story), parsing Markdown body.
+- **In**: Parsing run state `@state/workflow.md`, schema validation, graph-based fallback/validation.
+- **Out**: Modifying/Writing frontmatter (handled in Story 4.7), parsing Markdown body.
 
 ## Context for Development
 
@@ -27,14 +27,15 @@ Integrate `gray-matter` into the Electron Main process (`RuntimeStore`) to parse
 
 ### Technical Decisions
 - **Library**: `gray-matter` is the de-facto standard for parsing frontmatter in JS ecosystem. It is robust and handles YAML engine internally.
-- **Error Handling**: If file is missing or empty, return default state (entry node from graph).
+- **Validation**: Use `ajv/dist/2020` to validate `workflow-frontmatter.schema.json` and `workflow-graph.schema.json`.
+- **Error Handling**: Missing/invalid frontmatter or invalid `currentNodeId` should return a clear, actionable error (block execution).
 
 ## Implementation Plan
 
 ### Tasks
 
-- [ ] **Setup**: Install `gray-matter` as dependency.
-- [ ] Define `WorkflowState` interface in `RuntimeStore.ts`:
+- [x] **Setup**: Install `gray-matter` as dependency.
+- [x] Define `WorkflowState` interface in `RuntimeStore.ts`:
     ```typescript
     interface WorkflowState {
         currentNodeId: string
@@ -43,16 +44,16 @@ Integrate `gray-matter` into the Electron Main process (`RuntimeStore`) to parse
         // ... other fields
     }
     ```
-- [ ] Implement `parseWorkflowState(content: string): WorkflowState` helper.
-- [ ] Implement `getWorkflowState(packageId: string): Promise<WorkflowState | null>` in `RuntimeStore`.
-    - Logic: Resolve `@pkg/workflow.md`, read, parse.
-- [ ] **Test**: Unit tests for valid/invalid frontmatter.
+- [x] Implement frontmatter parsing + normalization logic.
+- [x] Implement `getWorkflowState(packageId: string, workflowId: string, runId: string, projectRoot: string)` in `RuntimeStore`.
+    - Logic: Load `workflow.graph.json` (for entry node + validation) then read run state `runs/<runId>/state/workflow.md` and parse/validate.
+- [x] **Test**: Unit tests for valid/invalid frontmatter.
 
 ### Acceptance Criteria
 
-- [ ] **Valid**: Parsing example `workflow.md` returns correct `currentNodeId`.
-- [ ] **Empty**: Parsing file without frontmatter returns safe defaults (or error if strictly required).
-- [ ] **Missing**: Handling missing file gracefully (or throwing specific error).
+- [x] **Valid**: Parsing example `workflow.md` returns correct `currentNodeId`.
+- [x] **Empty**: Empty `currentNodeId` falls back to `graph.entryNodeId`.
+- [x] **Missing**: Missing `@state/workflow.md` returns a specific error and blocks execution.
 
 ## Additional Context
 
@@ -66,5 +67,6 @@ Integrate `gray-matter` into the Electron Main process (`RuntimeStore`) to parse
 - **Workflow**:
     1. Import the micro package (mock zip or direct path).
     2. Call `loadWorkflow`.
-    3. Call `getWorkflowState`.
-    4. Assert `currentNodeId` is `step-01-select-story`.
+    3. Create a run-scoped `workflow.md` under `runs/<runId>/state/`.
+    4. Call `getWorkflowState`.
+    5. Assert `currentNodeId` is `step-01-select-story`.

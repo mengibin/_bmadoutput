@@ -11,7 +11,7 @@
 ## 1. PromptComposer 的输入（建议）
 
 ```ts
-type SessionMode = 'agent' | 'run';
+type SessionMode = 'agent' | 'chat' | 'run';
 
 interface ComposeInput {
   mode: SessionMode;
@@ -28,6 +28,7 @@ interface ComposeInput {
   // 当前会话/流程 persona
   activeAgentId: string;               // session / run 的“默认 persona”
   effectiveAgentId: string;            // node.agentId ?? activeAgentId
+  // mode=chat: 不需要把 persona 显式写给 LLM（但仍会发送 ToolPolicy；默认全开，可被 SystemToolPolicy/agent.tools 收紧）
 
   // run 状态（mode=run 时必填）
   runId?: string;
@@ -56,7 +57,7 @@ interface ComposeInput {
     }>;
   };
 
-  // tool policy（来自 agents.json + 全局默认合并）
+  // tool policy（默认全开；由 Settings 的 SystemToolPolicy + agents.json(agent.tools) 合并）
   toolPolicy: {
     fs: { enabled: boolean; maxReadBytes: number; maxWriteBytes: number };
     mcp: { enabled: boolean; allowedServers?: string[] };
@@ -84,7 +85,7 @@ interface ComposeInput {
 你可以把 system/user 拆成多个“片段”，最后合并为 `messages[]`：
 
 1) **System(BaseRuntimeRules)**：固定模板（跨 agent/workflow 通用）
-2) **System(ToolPolicy)**：从 agent.tools 合并出本次允许的工具能力与限额（并声明 `@pkg` 只读）
+2) **System(ToolPolicy)**：从 Settings 的 SystemToolPolicy + agent.tools 合并出本次允许的工具能力与限额（并声明 `@pkg` 只读；默认全开）
 3) **System(Persona)**：从 `agents.json` 渲染 persona（或直接用 `agent.systemPrompt`）
 4) **User(Launcher / Continue)**：针对“启动/继续 run”的指令（对齐 micro-file+graph）
 5) **User(NodeBrief)**：把当前 node 的关键导航信息写清（nodeId、step file、inputs/outputs、允许的 next、artifacts 默认根）
@@ -355,7 +356,7 @@ Rules:
 
 ### 3.2 System(ToolPolicy)
 
-从 `agents.json` 的 `agent.tools`（schema）合并出最终策略并声明出来。
+从 Settings 的 SystemToolPolicy（系统级开关/限额）与 `agents.json` 的 `agent.tools`（agent 级策略，可进一步收紧）合并出最终策略并声明出来（默认：SystemToolPolicy 全开）。
 
 例如（来自 `examples/multi-workflows/agents.json` 的 analyst：`fs.enabled=true, mcp.enabled=false`）：
 

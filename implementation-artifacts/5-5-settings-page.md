@@ -54,7 +54,7 @@ so that I can connect to my preferred LLM provider, manage imported packages, an
 - **Security**: API Keys stored in `RuntimeStore` (local JSON). *Future: Use Electron SafeStorage.*
 
 ## Dependencies
-- Story 5-0 (Shell/Navigation) - *In Progress* (Settings entry point exists).
+- Story 5-0 (Shell/Navigation) - *Done* (Settings entry point exists).
 
 ## Design
 - **Layout**: Sidebar/Tabs for sections (LLM, Packages, General).

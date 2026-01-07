@@ -3,7 +3,7 @@
 ## Overview
 **Epic**: 5 – Runtime Frontend  
 **Priority**: Phase 3 (after Files Page)  
-**Status**: `ready-for-dev`
+**Status**: `done`
 
 ## Goal
 Persist Conversation metadata and message history per project in RuntimeStore, loading them when a project is reopened and appending new messages during session.
@@ -21,6 +21,7 @@ Persist Conversation metadata and message history per project in RuntimeStore, l
 6. **User Feedback on Failure**: Persistence failures surface a user-visible error (toast/alert) instead of silent console-only logs.
 7. **Atomic Writes**: Conversation index and message files are saved atomically (tmp → rename) to avoid corruption on crash.
 8. **Run Phase Alignment**: `runs[].phase` is stored as `RunPhase` or normalized to a valid `RunPhase` value on load.
+9. **Delete Conversation (UI)**: Works list supports deleting a conversation with confirmation, and removes it from disk.
 
 ## Out of Scope
 - Run history persistence (handled by Story 4-8).
@@ -116,7 +117,7 @@ $RUNTIME_DATA/projects/<projectId>/
 2. Add a message (type in chat)
 3. Close and reopen app
 4. Verify conversations and messages are restored
-5. Delete a conversation, verify it's removed from disk
+5. Delete a conversation (Works list trash icon), verify it's removed from disk
 
 ---
 
@@ -135,9 +136,13 @@ $RUNTIME_DATA/projects/<projectId>/
 - `crewagent-runtime/electron/main.ts`
 - `crewagent-runtime/electron/preload.ts`
 - `crewagent-runtime/src/stores/appStore.ts`
+- `crewagent-runtime/src/hooks/useConversationWorkspace.ts`
+- `crewagent-runtime/src/pages/WorksPage/WorksPage.tsx`
+- `crewagent-runtime/src/pages/WorksPage/WorksPage.css`
+- `crewagent-runtime/src/pages/WorkspacePage/WorkspacePage.tsx`
 - `crewagent-runtime/electron/stores/runtimeStore.test.ts`
 
 ---
 
 ## Related Artifacts
-- [Tech Spec](file:///Users/mengbin/code/GPT/CrewAgent/_bmad-output/implementation-artifacts/tech-spec-5-8-persist-conversations.md) (to be created)
+- Tech spec: `_bmad-output/implementation-artifacts/tech-spec-5-8-persist-conversations.md`
