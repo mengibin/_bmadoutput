@@ -83,23 +83,23 @@ development_status:
   4-2-load-workflow-graph-and-step-files: done
   4-3-parse-frontmatter-to-determine-current-node: done
   4-4-compose-complete-prompt-for-llm: done
-  4-5-call-llm-api-openai-toolcalls-local-llm: review
-  4-6-execute-tool-calls-sandboxed-filesystem: review
-  4-7-validate-graph-transition-and-update-frontmatter: review
-  4-8-create-execution-project-folder: review
-  4-9-save-all-artifacts-to-project-folder: backlog
+  4-5-call-llm-api-openai-toolcalls-local-llm: done
+  4-6-execute-tool-calls-sandboxed-filesystem: done
+  4-7-validate-graph-transition-and-update-frontmatter: done
+  4-8-create-execution-project-folder: done
+  4-9-save-all-artifacts-to-project-folder: in-progress
   4-10-execute-mcp-tool-calls-stdio-driver: backlog
-  4-11-agent-first-session-menu-and-command-routing: review
+  4-11-agent-first-session-menu-and-command-routing: done
   epic-4-retrospective: optional
 
   epic-5: in-progress
   5-0-runtime-ui-shell-and-navigation: done
   5-1-view-current-workflow-state: done
   5-10-files-page-project-explorer: done
-  5-11-enhanced-chat-interface: review
-  5-12-interactive-embedded-widgets: review
-  5-13-real-time-llm-streaming-backend: review
-  5-14-tool-policy-and-chatmode-alignment: review
+  5-11-enhanced-chat-interface: done
+  5-12-interactive-embedded-widgets: done
+  5-13-real-time-llm-streaming-backend: done
+  5-14-tool-policy-and-chatmode-alignment: done
   5-2-view-execution-log: done
   5-3-resume-execution-after-crash: done # Renamed: Workflow Progress with Real Data
   5-4-configure-tool-call-timeout: backlog
