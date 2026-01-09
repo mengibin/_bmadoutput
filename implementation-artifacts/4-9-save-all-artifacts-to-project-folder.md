@@ -1,6 +1,6 @@
 # Story 4.9: Save All Artifacts to ProjectRoot (Project-First)
 
-Status: in-progress
+Status: done
 
 > **Tech Spec:** `_bmad-output/implementation-artifacts/tech-spec-4-9-save-all-artifacts-to-project-folder.md`
 
@@ -89,9 +89,9 @@ so that outputs are organized and persisted.
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][HIGH] Execution Log UI is not backed by `@state/logs/execution.jsonl` (UI reads in-memory runtime logs only), so AC-3 isn’t fully satisfied. [crewagent-runtime/src/hooks/useLogs.ts:1]
-- [ ] [AI-Review][MEDIUM] Artifact recording hardcodes `@project/artifacts/` and ignores configurable `ProjectConfig.artifactsDir`, so custom artifacts roots won’t be tracked. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
-- [ ] [AI-Review][LOW] Paths like `@project/./artifacts/a.md` won’t be recorded because the artifacts check uses `startsWith('@project/artifacts/')` without normalizing internal `./` segments. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
+- [x] [AI-Review][HIGH] Execution Log UI is not backed by `@state/logs/execution.jsonl` (UI reads in-memory runtime logs only), so AC-3 isn’t fully satisfied. [crewagent-runtime/src/hooks/useLogs.ts:1]
+- [x] [AI-Review][MEDIUM] Artifact recording hardcodes `@project/artifacts/` and ignores configurable `ProjectConfig.artifactsDir`, so custom artifacts roots won’t be tracked. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
+- [x] [AI-Review][LOW] Paths like `@project/./artifacts/a.md` won’t be recorded because the artifacts check uses `startsWith('@project/artifacts/')` without normalizing internal `./` segments. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
 
 ## Dev Agent Record
 
@@ -111,15 +111,24 @@ GPT-5.2 (Codex CLI)
 - Recording uses the existing `updateFrontmatter` path (schema + transition validation) and dedupes entries.
 - If state update fails, the newly created artifact file is rolled back (no partial success).
 - Added tests for artifact recording, dedupe, rollback behavior, and execution log entry presence.
+- Execution Log UI now loads the active run audit log from `@state/logs/execution.jsonl` and de-dupes tool entries.
+- Artifact recording now respects `ProjectConfig.artifactsDir` and normalizes dot segments in paths.
 - Repo lint currently fails due to pre-existing React hooks dependency warnings (unrelated to this change).
 
 ### File List
 
 - `crewagent-runtime/electron/services/fileSystemToolHost.ts`
 - `crewagent-runtime/electron/services/fileSystemToolHost.test.ts`
+- `crewagent-runtime/electron/main.ts`
+- `crewagent-runtime/electron/preload.ts`
+- `crewagent-runtime/electron/electron-env.d.ts`
+- `crewagent-runtime/src/hooks/useLogs.ts`
+- `crewagent-runtime/src/pages/WorkspacePage/WorkspacePage.tsx`
+
 
 ## Change Log
 
+- 2026-01-08: Addressed review follow-ups (JSONL-backed logs, configurable artifactsDir, path normalization); status set to done.
 - 2026-01-08: Code review completed; 1 HIGH / 1 MEDIUM / 1 LOW issue logged; status set to in-progress.
 
 ## Senior Developer Review (AI)
@@ -133,6 +142,6 @@ GPT-5.2 (Codex CLI)
 
 ### Action Items
 
-- [ ] [AI-Review][HIGH] Execution Log UI must read from `@state/logs/execution.jsonl` (or explicitly persist/reload logs from it) so AC-3 is truly “backed” by JSONL. [crewagent-runtime/src/hooks/useLogs.ts:1]
-- [ ] [AI-Review][MEDIUM] Respect configurable artifacts root (`ProjectConfig.artifactsDir`) when deciding whether to append to `artifacts[]`. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
-- [ ] [AI-Review][LOW] Normalize `@project` paths before artifact-root matching to handle `./` segments. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
+- [x] [AI-Review][HIGH] Execution Log UI must read from `@state/logs/execution.jsonl` (or explicitly persist/reload logs from it) so AC-3 is truly “backed” by JSONL. [crewagent-runtime/src/hooks/useLogs.ts:1]
+- [x] [AI-Review][MEDIUM] Respect configurable artifacts root (`ProjectConfig.artifactsDir`) when deciding whether to append to `artifacts[]`. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]
+- [x] [AI-Review][LOW] Normalize `@project` paths before artifact-root matching to handle `./` segments. [crewagent-runtime/electron/services/fileSystemToolHost.ts:1388]

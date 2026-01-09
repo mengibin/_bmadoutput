@@ -87,7 +87,7 @@ development_status:
   4-6-execute-tool-calls-sandboxed-filesystem: done
   4-7-validate-graph-transition-and-update-frontmatter: done
   4-8-create-execution-project-folder: done
-  4-9-save-all-artifacts-to-project-folder: in-progress
+  4-9-save-all-artifacts-to-project-folder: done
   4-10-execute-mcp-tool-calls-stdio-driver: backlog
   4-11-agent-first-session-menu-and-command-routing: done
   epic-4-retrospective: optional
