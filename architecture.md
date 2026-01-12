@@ -466,7 +466,8 @@ crewagent-runtime/
 | **Frontend ↔ Backend** | REST API (HTTPS) | CRUD for packages, Auth |
 | **Backend → DB** | SQLAlchemy ORM | PostgreSQL（开发：Docker 本地） |
 | **Runtime → LLM** | OpenAI/Ollama API | Via `llm-adapter.ts` |
-| **Runtime → Local Tools** | Builtin ToolHost (ToolCalls) + MCP (optional) | MVP：内置 `fs.*` 工具优先；复杂外部工具后续接 MCP（stdio/jsonrpc） |
+| **Runtime → Local Tools** | Builtin ToolHost (ToolCalls) + MCP (optional) | MVP：内置 `fs.*` + `python.run` 工具优先；复杂外部工具后续接 MCP（stdio/jsonrpc） |
+| **Runtime → Python** | Bundled Python (child_process.spawn) | `python.run` tool executes scripts using bundled Python 3.11+ in `resources/python/` |
 | **Main ↔ Renderer** | Electron IPC | Via `ipc-handlers.ts` |
 
 ---

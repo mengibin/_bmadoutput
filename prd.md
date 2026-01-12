@@ -211,6 +211,7 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-INT-02**: Runtime must capture `stdout` and `stderr` from spawned tools and inject them back into the Agent context.
 *   **FR-INT-03**: Runtime must support **FileSystem MCP Driver** for reading/writing files within the Project Folder.
 *   **FR-INT-04**: Runtime must enforce **Sandboxed File Access**: All file operations must be scoped to the Project's designated folder.
+*   **FR-INT-05**: Runtime must support **Python Script Execution** via a bundled Python environment, allowing the LLM to execute Python code (`python.run` tool) for complex calculations, data processing, and deterministic logic without relying on host Python installation.
 
 ### Management Capabilities (Project & State)
 *   **FR-MNG-01**: System must support selecting/opening a user **Project Folder** (`ProjectRoot`), and create a dedicated **Run Folder** (private RuntimeStore) for each new execution.

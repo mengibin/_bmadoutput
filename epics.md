@@ -1228,6 +1228,108 @@ So that the chat UI updates in real time without waiting for the full response.
 
 ---
 
+### Story 5.14: Tool Policy & ChatMode Alignment
+
+*(Existing story - details in implementation-artifacts/5-14-tool-policy-and-chatmode-alignment.md)*
+
+---
+
+### Story 5.15: Python Script Execution Capability
+
+As a **Consumer**,
+I want the Agent to be able to execute Python scripts,
+So that I can leverage Python for complex calculations, data processing, and deterministic logic.
+
+**Acceptance Criteria:**
+
+**Given** the Agent needs to perform a computation or data operation
+**When** it calls the `python.run` tool with `code` or `file` argument
+**Then** the Runtime executes the script using the **bundled Python** environment (not host system Python)
+**And** returns `stdout`, `stderr`, and `exitCode` as the tool result
+
+**Given** the Settings page
+**When** I view the Engine section
+**Then** I can configure "Python Execution Timeout" (default: 60 seconds)
+**And** scripts exceeding this timeout are killed with an error
+
+**Given** the Agent generates Python code
+**When** it submits via `python.run(code="...")`
+**Then** the code is written to a temp file, executed, and the temp file is cleaned up
+**And** no user confirmation is required (auto-execution)
+
+**Given** the Runtime installation package
+**When** it is installed on a fresh macOS/Windows machine
+**Then** it includes a bundled portable Python (3.11+) in `resources/python/`
+**And** `python.run` works without requiring the user to install Python separately
+
+**Feasibility Analysis:**
+
+| Component | Current State | Integration Effort |
+|:----------|:-------------|:-------------------|
+| `ToolHost` interface | Extensible via `getVisibleTools()` + `executeToolCall()` | Low |
+| `FileSystemToolHost` | Handles `fs.*` tools; can add `python.run` in same pattern | Low |
+| `ExecutionEngine` | Already routes all tools via `ToolHost`; no changes needed | None |
+| `RuntimeSettings` | Already has `engine.maxTurns`; can add `pythonTimeout` | Low |
+| `SettingsPage` | Already renders engine settings; add one input field | Low |
+
+**Integration Points (Runtime Only):**
+
+| File | Change |
+|:-----|:-------|
+| `fileSystemToolHost.ts` | Add `python.run` to `getVisibleTools()` and `dispatch()` |
+| `pythonService.ts` | **NEW**: Utility to resolve bundled Python path |
+| `runtimeStore.ts` | Add `pythonTimeout` to `RuntimeSettings` |
+| `SettingsPage.tsx` | Add "Python Timeout" input field |
+| `system-base-rules.md` | Add Python usage instructions |
+| `electron-builder.json5` | Configure `extraResources` to bundle Python |
+
+**Risk Analysis:**
+
+| Risk | Level | Mitigation |
+|:-----|:------|:-----------|
+| Large bundle size (~50MB) | Medium | Accept for v1 |
+| Missing packages | Medium | LLM sees error and informs user |
+| Security (arbitrary code) | High | Same risk as `fs.write`; Accept for v1 |
+| Infinite loop | Low | Timeout handling |
+
+**Design Decisions:**
+1. **Bundled Python**: Portable Python 3.11+ in `resources/python/`
+2. **Script Mode**: Fresh process per call (no REPL state)
+3. **Auto-Execution**: No user confirmation required
+4. **Timeout**: Configurable, default 60 seconds
+
+> 详细规格见：`_bmad-output/implementation-artifacts/5-15-python-script-execution.md`
+> 技术规格见：`_bmad-output/implementation-artifacts/tech-spec-5-15-python-script-execution.md`
+
+---
+
+### Story 5.16: Python Auto-Install Missing Libraries
+
+As a **Consumer**,
+I want the system to automatically install missing Python libraries when my code fails with `ModuleNotFoundError`,
+So that I don't need to manually manage package installations.
+
+**Acceptance Criteria:**
+
+**Given** the Agent calls `python.run(code="import pandas; ...")`
+**When** the script fails with `ModuleNotFoundError: No module named 'pandas'`
+**Then** Runtime detects the missing module, runs `pip install pandas`, and retries the script
+
+**Given** the Settings page → Python section
+**Then** I can configure: Auto-install On/Off, PyPI mirror URL, Max retries per run
+
+**Given** the Runtime installation
+**Then** it includes small common libraries: requests, openpyxl, python-docx, PyYAML, beautifulsoup4 (~15MB)
+**And** large libraries (numpy, pandas) are installed on-demand when first imported
+
+**Platform Support:**
+- **v1**: macOS Intel (x86_64)
+- **Future**: macOS Apple Silicon (arm64), Windows (x64), Linux (x64)
+
+> 详细规格见：`_bmad-output/implementation-artifacts/5-16-python-third-party-libraries.md`
+
+---
+
 ## Design Notes
 
 ### Dependency Handling (BMad Pattern)

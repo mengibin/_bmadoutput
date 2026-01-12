@@ -108,4 +108,6 @@ development_status:
   5-6-configure-llm-api-key-in-runtime: done # Merged into 5-5-settings-page
   5-7-view-and-manage-mcp-drivers: backlog
   5-8-persist-conversations: done
+  5-15-python-script-execution: done  # NEW: Bundled Python execution
+  5-16-python-third-party-libraries: in-progress  # Auto-install on ModuleNotFoundError
   epic-5-retrospective: optional
