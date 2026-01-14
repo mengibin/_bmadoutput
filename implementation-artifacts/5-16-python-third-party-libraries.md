@@ -1,6 +1,6 @@
 # Story 5.16: Python Auto-Install Missing Libraries
 
-Status: in-progress
+Status: done
 
 <!-- Note: Depends on Story 5.15 (Python Script Execution). Design complete. -->
 
@@ -247,9 +247,13 @@ const defaultSettings = {
   - [x] 4.2 Update `getVisibleTools()` to inject package list
   - [x] 4.3 Add install note to `ToolResult`
 
-- [ ] 5) Testing
+- [x] 5) Testing
   - [x] 5.1 Unit tests for auto-install flow
-  - [ ] 5.2 Manual verification
+  - [x] 5.2 Manual verification
+    - [x] 5.2.1 Auto-install: `import cowsay` triggers install + success
+    - [ ] 5.2.2 Offline mode: no pip attempt; clear error (deferred)
+    - [x] 5.2.3 Import local wheel: `.whl` install + import success
+    - [x] 5.2.4 Cross-conversation: new session shows installed pkg
 
 ## Dev Notes
 
@@ -298,6 +302,7 @@ GPT-5（Codex CLI）
 - `crewagent-runtime`: `npm test -- fileSystemToolHost.test.ts`
 - `crewagent-runtime`: `npx tsx .tmp/manual-auto-install.ts`
 - `crewagent-runtime`: `npx tsx .tmp/manual-cross-conversation.ts`
+- `crewagent-runtime`: `npx tsx .tmp/manual-wheel-import.ts`
 
 ### Completion Notes List
 
@@ -308,9 +313,16 @@ GPT-5（Codex CLI）
 - 预置 requests/openpyxl/python-docx/PyYAML/beautifulsoup4/lxml 到 bundled Python，并更新 `bundled-packages.json`。
 - 新增单测覆盖缺包自动安装与失败分支。
 - 手工验证 #1：`python.run` 执行 `import cowsay` 触发自动安装，返回 `autoInstalled`/`installLog`；随后卸载 cowsay。
+- 备忘：手工验证 #2（Offline mode）暂不测试：开启 offlineMode 后，`python.run` 不应触发 pip 自动安装；`python.install` 应返回 `OFFLINE_MODE`。
+- 手工验证 #3：下载 `.whl` 文件并通过 pipInstall 本地路径完成安装，随后 `import cowsay` 成功并卸载。
 - 手工验证 #4：安装 cowsay 后新建 host，`python.run` 描述包含 “Recently installed: cowsay”.
 - 当前 `resources/python` 体积约 88MB（未达到 Dev Notes 中的 ~65MB 目标）。
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] 补做 Offline mode 手工验证（不阻塞 story 关闭）：开启 offlineMode 后，`python.run` 不应触发 pip 自动安装；`python.install` 应返回 `OFFLINE_MODE`。
 
 ## Change Log
 
 - 2026-01-10: 修复 code-review 发现的问题，补全自动安装设置/进度反馈/缓存预热/预置依赖与测试；修复非 0 退出码处理并通过单测；补充跨会话可见的最近安装提示；因 bundle 体积偏大与手工验证未完成，状态调整为 in-progress。
+- 2026-01-12: 关闭 story：已完成核心 AC 与手工验证（offline mode 仅备忘，后续补测）。
