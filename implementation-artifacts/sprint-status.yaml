@@ -110,4 +110,5 @@ development_status:
   5-8-persist-conversations: done
   5-15-python-script-execution: done  # NEW: Bundled Python execution
   5-16-python-third-party-libraries: done  # Auto-install on ModuleNotFoundError
+  5-17-file-drag-to-chat-attachment: review  # Implementation complete, pending verification
   epic-5-retrospective: optional

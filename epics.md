@@ -1330,7 +1330,40 @@ So that I don't need to manually manage package installations.
 
 ---
 
+### Story 5.17: File Drag-to-Chat Attachment
+
+As a **Consumer**,
+I want to drag files from the Files panel into the chat input area,
+So that I can reference project files in my conversation with the Agent and provide context more efficiently.
+
+**Acceptance Criteria:**
+
+**Given** I am viewing the Files panel in a Project
+**When** I drag a file node from the file tree
+**Then** the drag operation starts with file metadata (path, name)
+
+**Given** I am in a conversation with the chat input visible
+**When** I drag a file over the chat input area
+**Then** the input area visually indicates it can receive the drop
+**And** when I drop the file, it is added to the attached files list
+
+**Given** I have attached files to the chat input
+**When** I view the chat input area
+**Then** the attached files appear as tags above the text input
+**And** each tag shows the file name with a remove button
+
+**Given** I have attached files and typed a message
+**When** I send the message
+**Then** the message includes file metadata references (path, name)
+**And** the LLM can use `fs.read` to access file content if needed
+**And** the attached files list is cleared after sending
+
+> 详细规格见：`_bmad-output/implementation-artifacts/5-17-file-drag-to-chat-attachment.md`
+
+---
+
 ## Design Notes
+
 
 ### Dependency Handling (BMad Pattern)
 
