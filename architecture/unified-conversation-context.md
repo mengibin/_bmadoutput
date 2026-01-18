@@ -1,6 +1,6 @@
-# Tech Spec: Story 5-17 – Unified Conversation Log + Cross-Mode LLM Context (Codex-style)
+# Unified Conversation Context
 
-> Architecture reference: keep this document as a long-term v2 design note for CrewAgent’s conversation/context system.
+> Architecture reference: CrewAgent conversation / context system design (Codex-style approach).
 
 ## 1. Summary
 
