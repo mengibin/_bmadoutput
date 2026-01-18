@@ -100,9 +100,29 @@ MVP recommendation: **Option A**.
 
 ---
 
-### 4.2 Context Builder (Core): `buildLlmMessagesFromConversation()`
+### 4.2 Context Builder Module (Core)
 
-Create a single builder used by Chat / Agent / Run.
+> **设计原则**：Context Builder 应作为**独立模块**实现，与 Chat / Agent / Run 三种模式解耦，便于维护和单元测试。
+
+#### 模块结构
+
+```
+src/core/context-builder/
+├── index.ts                      # 主入口 & public API
+├── types.ts                      # 类型定义
+├── buildLlmMessages.ts           # 核心构建逻辑
+├── budgetTrimmer.ts              # 预算裁剪策略
+├── toolOutputFormatter.ts        # 工具输出格式化（preview + path）
+├── systemPromptComposer.ts       # System Prompt 拼装
+└── __tests__/                    # 单元测试
+```
+
+#### Public API
+
+```typescript
+// 主函数：供 Chat / Agent / Run 统一调用
+export function buildLlmMessagesFromConversation(options: ContextBuildOptions): ContextBuildResult
+```
 
 **Inputs**
 - `projectRoot`, `packageId`, `conversationId`
@@ -115,17 +135,149 @@ Create a single builder used by Chat / Agent / Run.
 - `OpenAIChatMessage[]` to send to `llmAdapter.chatCompletions()`
 - debug metadata: message counts, estimated tokens, which items were kept/dropped
 
-**Budget model (Codex-style)**
-- Hard limits:
-  - max messages (e.g. 80)
-  - max characters (fallback if token estimator is not used)
-  - optionally a token budget estimate
-- Always keep:
-  - the latest user message
-  - tool-call groups that are within the retained window
-- When trimming:
-  - trim from oldest → newest
-  - preserve tool-call protocol groups (don’t keep `tool` without its preceding `assistant(tool_calls)` if it exists in-range)
+---
+
+### 4.3 Context Compression Module (独立模块)
+
+> **设计原则**：上下文压缩是未来需要大量优化的核心模块，必须保证**高扩展性**和**完全独立性**，采用**策略模式 (Strategy Pattern)** 设计。
+
+#### 模块结构
+
+```
+src/core/context-compression/
+├── index.ts                        # Public API
+├── types.ts                        # 策略接口 & 类型定义
+├── CompressionPipeline.ts          # 压缩管道（阈值监控 + 策略执行）
+├── ContextUsageMonitor.ts          # 上下文占用监控（计算剩余量）
+├── strategies/
+│   ├── KeyMessageExtractionStrategy.ts  # v1: 关键消息提取（无 LLM）
+│   ├── LlmSummaryStrategy.ts            # v2: LLM 辅助摘要
+│   └── VectorRetrievalStrategy.ts       # v2+: 向量检索（RAG-style）
+└── __tests__/
+```
+
+#### 压缩模式：Claude Code 风格（阈值触发）
+
+采用 Claude Code / Codex 的设计模式：
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Context Budget (100%)                  │
+├─────────────────────────────────────────────────────┤
+│ ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ← 已使用 (65%)                      剩余 (35%) →   │
+│                                                     │
+│ 当已使用 > 80% 时 → 触发压缩                        │
+└─────────────────────────────────────────────────────┘
+```
+
+**核心接口**：
+
+```typescript
+interface ContextUsage {
+  usedTokens: number
+  totalBudget: number
+  usagePercent: number      // 0-100
+  remaining: number
+}
+
+interface CompressionConfig {
+  // 阈值触发（Claude Code 风格）
+  triggerThreshold: number   // e.g. 0.8 (当占用超过 80% 时触发)
+  targetAfterCompression: number  // e.g. 0.5 (压缩后目标占用 50%)
+  
+  // 预算设置
+  totalBudget: number        // 总 token 预算
+  reservedForResponse: number  // 为 LLM 响应预留
+}
+```
+
+**触发流程**：
+
+```
+每次构建 LLM 请求前
+    ↓
+计算当前 context usage
+    ↓
+if (usagePercent > triggerThreshold) {
+    执行压缩策略
+    - v1: 关键消息提取
+    - v2: LLM 摘要
+}
+    ↓
+构建并发送请求
+```
+
+#### v1 实现：KeyMessageExtractionStrategy（无 LLM）
+
+不调用 LLM，通过规则提取关键消息：
+
+```typescript
+function extractKeyMessages(messages: Message[]): Message[] {
+  const keyMessages: Message[] = []
+  
+  for (const msg of messages) {
+    const isKey = 
+      msg.role === 'user' ||                      // 所有用户消息
+      msg.content?.includes('ARTIFACT_SAVED') ||  // 产出记录
+      msg.content?.includes('NODE_COMPLETE') ||   // 节点完成
+      msg.content?.includes('RUN_COMPLETE') ||    // 运行完成
+      isToolCallWithResult(msg) ||                // 保持工具调用完整性
+      isRecentMessage(msg, RECENT_WINDOW)         // 最近 N 条
+    
+    if (isKey) keyMessages.push(msg)
+  }
+  
+  return keyMessages
+}
+```
+
+**保留规则**：
+- ✅ 所有用户消息（用户意图）
+- ✅ 产出/完成记录（关键决策）
+- ✅ 完整的工具调用组（协议完整性）
+- ✅ 最近 N 条消息（即时上下文）
+- ❌ 中间的冗长对话/调试信息
+
+#### v2 扩展：LlmSummaryStrategy
+
+v2 在关键消息提取基础上，对被删除的消息生成 LLM 摘要：
+
+```typescript
+async function summarize(droppedMessages: Message[]): Promise<string> {
+  const response = await llm.chat({
+    model: 'gpt-3.5-turbo',  // 使用低成本模型
+    messages: [
+      { role: 'system', content: SUMMARY_PROMPT },
+      { role: 'user', content: formatMessages(droppedMessages) }
+    ]
+  })
+  return response.content  // 约 200-500 字的摘要
+}
+```
+
+摘要作为一条 `role=system` 消息插入压缩后的上下文开头。
+
+#### 演进路径
+
+| 版本 | 策略 | LLM | 说明 |
+|------|------|-----|------|
+| **v1** | `KeyMessageExtractionStrategy` | ❌ | 规则提取关键消息 |
+| v2 | `LlmSummaryStrategy` | ✅ | 摘要被删除的内容 |
+| v2+ | `VectorRetrievalStrategy` | ✅ | 根据意图检索相关历史 |
+| v2+ | `HybridStrategy` | ✅ | 组合多策略 |
+
+#### UI 集成（可选）
+
+提供剩余量指示器，类似 Claude Code：
+
+```typescript
+// 前端可订阅
+interface ContextStatusEvent {
+  usagePercent: number
+  status: 'normal' | 'warning' | 'compressing'
+}
+```
 
 **Tool output strategy (Chosen)**
 - Persist full tool results for debugging and replay, but **do not** inject full payloads into every LLM request.
