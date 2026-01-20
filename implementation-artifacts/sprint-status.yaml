@@ -112,3 +112,8 @@ development_status:
   5-16-python-third-party-libraries: done  # Auto-install on ModuleNotFoundError
   5-17-file-drag-to-chat-attachment: review  # Implementation complete, pending verification
   epic-5-retrospective: optional
+
+  epic-7: in-progress
+  7-3-create-context-builder-module: done
+  7-4-create-context-compression-module: done
+  7-5-integrate-context-builder-chat-mode: done

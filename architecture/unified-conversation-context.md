@@ -210,34 +210,52 @@ if (usagePercent > triggerThreshold) {
 
 #### v1 实现：KeyMessageExtractionStrategy（无 LLM）
 
-不调用 LLM，通过规则提取关键消息：
+不调用 LLM，通过**可解释打分 + 预算内贪心选择**提取关键消息，并在超预算时启用兜底降级：
 
 ```typescript
 function extractKeyMessages(messages: Message[]): Message[] {
-  const keyMessages: Message[] = []
-  
-  for (const msg of messages) {
-    const isKey = 
-      msg.role === 'user' ||                      // 所有用户消息
-      msg.content?.includes('ARTIFACT_SAVED') ||  // 产出记录
-      msg.content?.includes('NODE_COMPLETE') ||   // 节点完成
-      msg.content?.includes('RUN_COMPLETE') ||    // 运行完成
-      isToolCallWithResult(msg) ||                // 保持工具调用完整性
-      isRecentMessage(msg, RECENT_WINDOW)         // 最近 N 条
-    
-    if (isKey) keyMessages.push(msg)
-  }
-  
-  return keyMessages
+  // 1) 基础规则：标记“必保留”
+  const mandatory = markMandatory(messages) // system / recent / key events / tool groups / latest user
+
+  // 2) 评分：给剩余消息打分（可解释）
+  const scored = score(messages, {
+    keywords: ['must', 'should', 'need', '必须', '需要'],
+    hasFilePath: true,
+    hasCodeBlock: true,
+    hasNumbers: true,
+    recencyDecay: true,
+    penalizeLargeToolResults: true,
+  })
+
+  // 3) 贪心选取：在预算内按分数挑选（保留完整 tool 组）
+  const selected = greedySelect(scored, mandatory, budget)
+
+  // 4) 兜底：若 mandatory + selected 仍超预算，则降级
+  return fallbackTrim(selected, {
+    toolResultPreview: true,
+    truncateLongUser: true,
+    truncateLongAssistant: true,
+    // 极端兜底：仅保留最近 K 回合（K=4）
+    keepRecentRounds: 4,
+  })
 }
 ```
 
-**保留规则**：
+**保留规则（常规）**：
 - ✅ 所有用户消息（用户意图）
 - ✅ 产出/完成记录（关键决策）
 - ✅ 完整的工具调用组（协议完整性）
 - ✅ 最近 N 条消息（即时上下文）
+- ❌ 历史 system 消息（默认不保留，避免重复）
+- ✅ 仅保留 **SUMMARY 类 system 消息**（v2 用于摘要，例如以 `SUMMARY` / `CONVERSATION_SUMMARY` 开头）
 - ❌ 中间的冗长对话/调试信息
+
+**超预算兜底（解决 111%→111%）**：
+- 裁剪 tool 结果为 preview（保留 tool name + status + 前后 N 行/字符）。
+- 裁剪超长 user / assistant 文本（保留首段 + 关键 bullet 行 / 首句或“结论/summary”句）。
+- 若仍超预算：**仅保留最近 K 回合（K=4）**。
+  - 回合定义：以 user 消息为界，保留该 user 之后到下一个 user 之前的 assistant 内容。
+  - 若保留回合内出现 `tool_calls`，**必须同时保留对应 tool 结果**，保持协议完整性。
 
 #### v2 扩展：LlmSummaryStrategy
 
@@ -298,6 +316,7 @@ Note: Conversation files under RuntimeStore are not directly readable by tools v
   - persona (agent mode + run mode only; omit in chat mode)
   - a short “Mode banner” system message:
     - `MODE\n- active: run|agent|chat\n- note: history may include other modes; follow current instructions.`
+ - **Compression rule**: historical `role=system` messages are ignored by default, except for **summary-class system messages** (e.g., content starts with `SUMMARY` / `CONVERSATION_SUMMARY`) introduced in v2.
 
 **Run-only injection**
 - For mode=`run`, prepend existing run directive messages (RUN_DIRECTIVE + NODE_BRIEF + step context) as they are deterministic and often large.
