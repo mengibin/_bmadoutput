@@ -1362,6 +1362,37 @@ So that I can reference project files in my conversation with the Agent and prov
 
 ---
 
+### Story 5.18: Default Package Initialization
+
+As a **Consumer**,
+I want the Runtime to automatically import a default `.bmad` package on first launch if one is bundled,
+So that I can immediately start using the system without needing to manually import a package.
+
+**Acceptance Criteria:**
+
+**Given** the Runtime starts for the first time (empty RuntimeStore)
+**When** a default package exists in `resources/default-package/`
+**Then** it is automatically imported
+
+**Given** no default package exists in `resources/default-package/`
+**When** the Runtime starts
+**Then** initialization continues normally (current flow)
+
+**Given** the RuntimeStore already contains packages
+**When** the Runtime starts
+**Then** the default package check is skipped
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `RuntimeStore` | Add `tryInitializeDefaultPackage()` method |
+| `resources/default-package/` | Optional directory for bundled `.bmad` files |
+
+> 详细规格见：`_bmad-output/implementation-artifacts/5-18-default-package-initialization.md`
+
+---
+
 ## Design Notes
 
 
