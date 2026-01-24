@@ -161,6 +161,17 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 ---
 
+### Epic 8: Optimization & Enhancement
+**Goal**: Optimize user experience, improve system usability, and enhance runtime efficiency.
+**FRs covered**: N/A (non-functional improvements)
+**Deliverables**:
+- Default package initialization
+- Performance optimizations
+- UX improvements
+- Quality of life features
+
+---
+
 ## Epic 1: Project Initialization & Infrastructure
 
 **Goal**: Developers can set up all three repositories and run basic "hello world" apps.
@@ -1362,13 +1373,28 @@ So that I can reference project files in my conversation with the Agent and prov
 
 ---
 
-### Story 5.18: Default Package Initialization
+---
+
+## Epic 8: Optimization & Enhancement
+
+**Goal**: Optimize user experience, improve system usability, and enhance runtime efficiency.
+
+### Story 8.1: First Launch Experience & Default Package Initialization
 
 As a **Consumer**,
-I want the Runtime to automatically import a default `.bmad` package on first launch if one is bundled,
-So that I can immediately start using the system without needing to manually import a package.
+I want the Runtime to show a welcome/splash screen on first launch and automatically import a default `.bmad` package if bundled,
+So that I can immediately start using the system with a guided first experience.
 
 **Acceptance Criteria:**
+
+**Given** the Runtime starts for the first time (first launch)
+**When** the application loads
+**Then** a welcome/splash screen is displayed
+**And** after the splash screen completes, the setting `skipSplashScreen` is automatically set to `true`
+
+**Given** the Runtime starts on subsequent launches
+**When** the setting `skipSplashScreen` is `true`
+**Then** the splash screen is skipped and the app goes directly to the Start page
 
 **Given** the Runtime starts for the first time (empty RuntimeStore)
 **When** a default package exists in `resources/default-package/`
@@ -1386,10 +1412,244 @@ So that I can immediately start using the system without needing to manually imp
 
 | Component | Change |
 |:----------|:-------|
+| `RuntimeSettings` | Add `skipSplashScreen: boolean` setting |
 | `RuntimeStore` | Add `tryInitializeDefaultPackage()` method |
+| `App.tsx` or `SplashScreen` | Show splash on first launch, auto-set skip after |
 | `resources/default-package/` | Optional directory for bundled `.bmad` files |
 
-> 详细规格见：`_bmad-output/implementation-artifacts/5-18-default-package-initialization.md`
+> 详细规格见：`_bmad-output/implementation-artifacts/8-1-default-package-initialization.md`
+
+---
+
+### Story 8.2: Project Exit to Start Page
+
+As a **Consumer**,
+I want to exit the current Project and return to the Start page,
+So that I can switch to a different project or close my current work session.
+
+**Acceptance Criteria:**
+
+**Given** I am inside a Project (viewing conversations, files, or settings)
+**When** I click an "Exit Project" or "Close Project" button
+**Then** I am returned to the Start page (Home/Welcome screen)
+**And** the project state is preserved for future access
+
+**Given** I am on the Start page
+**When** I view recent projects
+**Then** I can see the project I just exited and can re-open it
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `appStore` | Add `closeProject()` action |
+| Project UI | Add exit button (e.g., in sidebar or header) |
+
+---
+
+### Story 8.3: Settings Tab Reorder
+
+As a **Consumer**,
+I want the Settings tabs to be ordered by importance and frequency of use,
+So that I can quickly access the most commonly used settings.
+
+**Acceptance Criteria:**
+
+**Given** I am on the Settings page
+**When** I view the tab list
+**Then** the tabs are ordered as:
+  1. **Package** - Package management (import/remove)
+  2. **LLM** - LLM provider/model configuration
+  3. **MCP** - MCP server management
+  4. **Tool** - Tool policy settings
+  5. Remaining tabs ordered by importance (Engine, Python, Node, Appearance, etc.)
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `SettingsPage.tsx` | Reorder tabs array |
+
+---
+
+### Story 8.4: Project Data Management & Orphan Recovery
+
+As a **Consumer**,
+I want to manage project data stored in RuntimeStore and recover orphan data when project folders are moved,
+So that I don't lose chat history when reorganizing my files and can clean up unused data.
+
+**Acceptance Criteria:**
+
+**Given** the Runtime starts
+**When** it detects orphan project data (original projectRoot path no longer exists)
+**Then** the user is notified of orphan data in Settings or Start page
+
+**Given** I view orphan project data in Settings
+**When** I see the orphan project list
+**Then** each orphan entry displays:
+  - **项目名称** (from `.crewagent.json.projectName` or folder name)
+  - **原路径** (truncated with tooltip for full path)
+  - **最后打开时间**
+  - **聊天数量**
+  - **数据大小** (e.g., "2.3 MB")
+
+**Given** I view orphan project data
+**When** I click "重新绑定文件夹"
+**Then** I can select a new folder to associate with the historical data
+**And** the project mapping is updated
+**And** all conversations and run history are preserved
+
+**Given** I view orphan project data
+**When** I click "删除数据"
+**Then** a confirmation dialog appears
+**And** upon confirmation, the orphan data is removed from RuntimeStore
+
+**Given** I view orphan project data from removable storage
+**When** I click "忽略(外接设备)"
+**Then** the orphan is temporarily hidden until next restart
+
+**Given** I move a project folder to a new location
+**When** I open the project from the new location
+**Then** if `.crewagent.json` contains a persistent `projectId`, the historical data is automatically matched
+**And** I see all previous conversations
+
+**UI Mockup:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 项目数据管理                                                 │
+├─────────────────────────────────────────────────────────────┤
+│ ⚠️ 发现 2 个孤儿项目数据                                     │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 📁 my-crewagent-project                                 │ │
+│ │    原路径: /Users/mengbin/old-folder/my-crewagent-...   │ │
+│ │    最后打开: 2026-01-20 | 聊天: 5 条 | 大小: 2.3 MB      │ │
+│ │    [重新绑定文件夹]  [删除数据]                          │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 📁 finance-workflow                                     │ │
+│ │    原路径: /Volumes/USB/projects/finance-workflow       │ │
+│ │    最后打开: 2026-01-15 | 聊天: 12 条 | 大小: 5.1 MB     │ │
+│ │    [重新绑定文件夹]  [删除数据]  [忽略(外接设备)]         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `ProjectMetadata` | Add `projectId`, `projectName`, `conversationCount`, `totalSizeBytes` |
+| `.crewagent.json` | Add persistent `projectId` (UUID) field |
+| `RuntimeStore` | Add `detectOrphanProjects()`, `rebindProject()`, `deleteOrphanData()` |
+| `SettingsPage` | Add "Project Data Management" tab/section |
+| Start Page | Show orphan data warning badge (optional) |
+
+---
+
+### Story 8.5: Smart Conversation Naming
+
+As a **Consumer**,
+I want conversations to be automatically named based on content,
+So that I can easily identify and find my conversation history.
+
+**Problem:**
+
+Multiple Workflow conversations show the same truncated name (e.g., "Workflow: Supply Chain Deci..."), making it hard to distinguish between them.
+
+**Solution: Smart Naming**
+
+使用 LLM 根据对话内容自动生成有意义的名称。
+
+**Acceptance Criteria:**
+
+**Given** I start a new conversation and send my first message
+**When** the first assistant reply completes
+**Then** the system uses LLM to generate a short, descriptive title (≤30 chars)
+**And** the title reflects the key topic or intent of the conversation
+**And** replaces the default "Workflow: xxx" or "New Conversation" name
+
+**Given** I continue an existing conversation
+**When** the topic changes significantly (optional enhancement)
+**Then** the system may suggest updating the title
+
+**Given** I want to manually rename a conversation
+**When** I click on the conversation name
+**Then** I can edit it inline
+**And** the custom name overrides the auto-generated name
+
+**Given** I hover over a truncated conversation name
+**When** the tooltip appears
+**Then** I see the full conversation title
+
+**Smart Naming Examples:**
+
+| First Message Content | Generated Title |
+|:----------------------|:----------------|
+| "帮我分析这个供应链决策..." | "供应链决策分析" |
+| "设计一个V型带轮..." | "V带轮设计计算" |
+| "报销流程的合规检查" | "报销合规检查" |
+| "Create user story for login" | "Login Feature Story" |
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `ConversationMetadata` | Add `generatedTitle`, `customTitle` fields |
+| LLM call after first exchange | Generate title (simple prompt, fast model) |
+| Conversation list UI | Show generated/custom title, inline edit |
+| Conversation item | Add tooltip for full name |
+
+**Prompt Example:**
+
+```
+Generate a short title (max 30 chars) for this conversation based on the user's first message:
+
+User: {first_user_message}
+
+Requirements:
+- Concise and descriptive
+- Capture the main topic/intent
+- No quotes or special characters
+```
+
+---
+
+### Story 8.6: Gemini LLM Provider Support
+
+As a **Consumer**,
+I want to use Google Gemini as my LLM provider,
+So that I can leverage Gemini's capabilities for workflow execution.
+
+**Acceptance Criteria:**
+
+**Given** I am on the Settings → LLM page
+**When** I select "Gemini" from the provider dropdown
+**Then** I see Gemini-specific configuration fields:
+  - API Key
+  - Model selection (gemini-pro, gemini-1.5-pro, etc.)
+  - Base URL (optional, for custom endpoints)
+
+**Given** I have configured Gemini as my provider
+**When** I execute a workflow or chat with an agent
+**Then** the request is sent to the Gemini API
+**And** tool calls work correctly (function calling)
+
+**Given** Gemini API returns an error
+**When** the error occurs
+**Then** a clear error message is shown to the user
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| `LLMProvider` type | Add `'gemini'` option |
+| `LlmAdapter` | Add Gemini API support (OpenAI-compatible or native) |
+| Settings UI | Add Gemini provider option and fields |
+
+**Note:** Gemini supports OpenAI-compatible API format, so may reuse existing `OpenAICompatibleLlmAdapter` with different base URL.
 
 ---
 

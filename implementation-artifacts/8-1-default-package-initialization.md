@@ -1,30 +1,43 @@
-# Story 5.18: Default Package Initialization
+# Story 8.1: First Launch Experience & Default Package Initialization
 
 ## 概述
 
-当 Runtime 首次启动（或 RuntimeStore 为空）时，检查是否存在内置的默认 `.bmad` 包。如果存在则自动导入，如果不存在则跳过，走现有流程。
+当 Runtime 首次启动时，显示欢迎/启动画面，并检查是否存在内置的默认 `.bmad` 包进行自动导入。启动完成后，自动将 `skipSplashScreen` 设置为 `true`，后续启动时跳过启动画面。
 
 ---
 
 ## 用户故事
 
 As a **Consumer**,
-I want the Runtime to automatically import a default `.bmad` package on first launch if one is bundled,
-So that I can immediately start using the system without needing to manually import a package.
+I want the Runtime to show a welcome/splash screen on first launch and automatically import a default `.bmad` package if bundled,
+So that I can immediately start using the system with a guided first experience.
 
 ---
 
 ## 验收标准
 
-### AC-1: 首次初始化时自动导入默认包（如存在）
+### AC-1: 首次启动显示启动画面
 
-**Given** the Runtime starts for the first time (empty RuntimeStore, no packages imported)
+**Given** the Runtime starts for the first time (first launch)
+**When** the application loads
+**Then** a welcome/splash screen is displayed
+**And** after the splash screen completes, the setting `skipSplashScreen` is automatically set to `true`
+
+### AC-2: 后续启动跳过启动画面
+
+**Given** the Runtime starts on subsequent launches
+**When** the setting `skipSplashScreen` is `true`
+**Then** the splash screen is skipped and the app goes directly to the Start page
+
+### AC-3: 首次初始化时自动导入默认包（如存在）
+
+**Given** the Runtime starts for the first time (empty RuntimeStore)
 **And** a default package exists in `resources/default-package/`
 **When** the `RuntimeStore` initializes
 **Then** the default `.bmad` package is automatically imported
 **And** the package appears in the packages list
 
-### AC-2: 无默认包时正常跳过
+### AC-4: 无默认包时正常跳过
 
 **Given** the Runtime starts for the first time
 **And** no default package exists in `resources/default-package/`
@@ -32,14 +45,14 @@ So that I can immediately start using the system without needing to manually imp
 **Then** the initialization continues normally with no errors
 **And** the packages list remains empty (current behavior)
 
-### AC-3: 已有包时不重复导入
+### AC-5: 已有包时不重复导入
 
 **Given** the RuntimeStore already contains packages (not first launch)
 **When** the `RuntimeStore` initializes
 **Then** the default package check is skipped
 **And** existing packages remain unchanged
 
-### AC-4: 导入失败容错
+### AC-6: 导入失败容错
 
 **Given** the default package exists but import fails (corrupted file, validation error, etc.)
 **When** the Runtime initializes
@@ -63,7 +76,29 @@ crewagent-runtime/
         └── runtimeStore.ts     # 主要修改点
 ```
 
-### 2. RuntimeStore 修改
+### 2. RuntimeSettings 修改
+
+```typescript
+interface RuntimeSettings {
+    // ... existing fields ...
+    skipSplashScreen?: boolean  // NEW: 是否跳过启动画面
+}
+```
+
+### 3. 启动画面逻辑
+
+```typescript
+// In App.tsx or SplashScreen component
+const isFirstLaunch = !settings.skipSplashScreen
+
+if (isFirstLaunch) {
+    // Show splash screen
+    // After splash completes:
+    updateSettings({ skipSplashScreen: true })
+}
+```
+
+### 4. RuntimeStore 修改
 
 ```typescript
 // In RuntimeStore constructor, after existing initialization:
@@ -127,30 +162,16 @@ private findDefaultPackage(): string | null {
 }
 ```
 
-### 3. electron-builder.json5 修改（可选）
-
-只有当 `resources/default-package/` 目录存在时才需要配置：
-
-```json5
-{
-  "extraResources": [
-    // ... existing resources ...
-    {
-      "from": "resources/default-package",
-      "to": "default-package",
-      "filter": ["**/*.bmad"]
-    }
-  ]
-}
-```
-
 ---
 
 ## 实现步骤
 
-1. 修改 `RuntimeStore` 添加 `tryInitializeDefaultPackage()` 和 `findDefaultPackage()` 方法
-2. 在构造函数末尾调用 `tryInitializeDefaultPackage()`
-3. （可选）在 `electron-builder.json5` 添加 extraResources 配置
+1. 在 `RuntimeSettings` 中添加 `skipSplashScreen` 字段
+2. 修改 `App.tsx` 或启动画面组件，首次启动时显示启动画面
+3. 启动画面完成后自动设置 `skipSplashScreen: true`
+4. 修改 `RuntimeStore` 添加 `tryInitializeDefaultPackage()` 和 `findDefaultPackage()` 方法
+5. 在构造函数末尾调用 `tryInitializeDefaultPackage()`
+6. （可选）在 `electron-builder.json5` 添加 extraResources 配置
 
 ---
 
@@ -158,5 +179,7 @@ private findDefaultPackage(): string | null {
 
 | 组件 | 变更 | 风险 |
 |:-----|:-----|:-----|
+| `RuntimeSettings` | 添加 `skipSplashScreen` 字段 | 低 |
+| `App.tsx` / `SplashScreen` | 首次启动画面逻辑 | 低 |
 | `RuntimeStore` | 添加两个私有方法 | 低 |
 | 现有流程 | 无默认包时完全兼容 | 无 |
