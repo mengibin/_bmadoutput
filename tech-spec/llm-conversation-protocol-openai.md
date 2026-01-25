@@ -130,6 +130,10 @@ export interface EngineTurn {
 }
 ```
 
+补充说明（RunPhase=`Completed`）：  
+- `Completed` 仅表示 **workflow 已结束**（UI 可展示“流程结束”标签）。  
+- `Completed` **不等价于会话硬停止**：用户仍可继续对话与工具调用；Runtime 可以在后续回合继续调用 LLM（通常仍保持 mode=`run`）。  
+
 ## 5. “可机器解析”的 user 内容：RUN_DIRECTIVE / NODE_BRIEF / USER_INPUT
 
 `create-story-micro` 的对照脚本使用了 **纯文本壳**（LLM 既能读懂、也便于人类 debug）。建议保持一致：
@@ -149,6 +153,33 @@ RUN_DIRECTIVE
 - autopilot: true | false
 ```
 
+当 workflow 已完成（例如 `variables.workflowStatus="complete"`）时，进入 **Post-Completion Prompt Profile**：  
+- `RUN_DIRECTIVE` **仍保留** workflow 级信息（`workflow/state/graph/artifactsRoot/...`），但**不新增 `runId` 字段**（保持现状）。  
+- `RUN_DIRECTIVE` **不包含 `currentNodeId`**（completed 后无 active step 概念）。  
+- `RUN_DIRECTIVE` 内注入 **Post-Run Protocol**（见下例）。  
+- completed 后若需要修改 `@state/workflow.md`（包括改变 completion 状态），必须先获得用户确认；推荐使用 `ui.ask_user` 的 `type="confirmation"`，并在用户提交的 `WIDGET_SUBMIT`（`{ confirmed: true }`）后再执行状态变更。  
+
+completed 变体示例：
+
+```text
+RUN_DIRECTIVE
+- runType: bmad-micro
+- intent: continue
+- workflow: <workflowId or workflow.md path>
+- state: @state/workflow.md
+- graph: @pkg/workflow.graph.json
+- artifactsRoot: @project/artifacts/
+- effectiveAgentId: <activeAgentId>
+- autopilot: true | false
+
+Protocol (post-run):
+1) This workflow is already completed. Do NOT assume there is an active step to execute.
+2) Continue as a normal conversation in Run mode: answer questions, review artifacts, and help the user iterate.
+3) Tools are still available. Use tools when helpful.
+4) If you need to modify @state/workflow.md (including changing completion status), you MUST ask the user for confirmation first.
+5) If the user confirms a state change and the workflow becomes non-completed, resume the normal workflow protocol on subsequent turns.
+```
+
 ### 5.2 NODE_BRIEF
 
 ```text
@@ -161,6 +192,8 @@ NODE_BRIEF
   - step-02-discover-inputs (label=next)
 ```
 
+当 workflow 已完成时：**不发送 `NODE_BRIEF`**（completed 后无 active step 概念）。  
+
 ### 5.3 USER_INPUT
 
 ```text
@@ -169,8 +202,9 @@ USER_INPUT
 <raw user text>
 ```
 
-- `mode=run`（workflow 流程中）建议包含 `- forNodeId: <currentNodeId>`，用于把用户回答绑定到当前节点。
-- `mode=agent/chat`（非流程对话）不需要绑定节点：省略 `forNodeId` 行，直接附上 `<raw user text>` 即可。
+- `mode=run`（workflow 未完成、存在 active step）建议包含 `- forNodeId: <currentNodeId>`，用于把用户回答绑定到当前节点。  
+- `mode=run` 且 workflow 已完成（Post-Completion Profile）**不绑定节点**：省略 `forNodeId` 行，直接附上 `<raw user text>`。  
+- `mode=agent/chat`（非流程对话）同样不需要绑定节点：省略 `forNodeId` 行。  
 
 ## 6. ToolHost `fs.*`：工具返回结构（建议统一 ToolResult）
 

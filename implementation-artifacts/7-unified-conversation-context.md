@@ -368,6 +368,30 @@ async function deleteConversation(projectRoot: string, conversationId: string) {
 
 ---
 
+## Story 7.11: Run Mode Post-Completion Prompt Profile (No Active Step)
+
+**Epic**: 7 – Unified Conversation Context  
+**Priority**: Phase 3 (Run UX correctness)  
+**Status**: `draft`
+
+### Goal
+当 workflow 已 `completed`（如 `variables.workflowStatus="complete"`）时：
+- `phase: Completed` 仅作为 UI 标签（不硬停止对话）
+- 仍保持 Run 模式可继续对话、也允许工具调用
+- Prompt 进入 Post-Completion Profile：移除全部 active step 注入（不发 `NODE_BRIEF` / stepFile / step markdown；`RUN_DIRECTIVE` 不含 `currentNodeId`；`USER_INPUT` 不含 `forNodeId`），但保留 workflow 级 `RUN_DIRECTIVE` 并注入 Post-Run Protocol
+
+### Acceptance Criteria
+1. completed 后仍可继续对话（Run 模式）
+2. completed 后不注入 step/node 信息（无 active step 概念）
+3. 工具仍可用（按 ToolPolicy）
+4. 变更 `@state/workflow.md` 需先确认
+
+### Dependencies
+- Story 4.4 (PromptComposer shells)
+- Story 7.7 (Run mode context builder integration)
+
+---
+
 ## Dependencies Graph
 
 ```
@@ -384,6 +408,8 @@ async function deleteConversation(projectRoot: string, conversationId: string) {
 7.6 (Integrate Agent) ───────────┤
     ↓                            │
 7.7 (Integrate Run) ─────────────┘
+    ↓
+7.11 (Post-Completion Profile)
     ↓
 7.8 (UI Indicator) [optional]
     ↓

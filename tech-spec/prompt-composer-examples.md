@@ -277,6 +277,29 @@ RUN_DIRECTIVE
 - autopilot: true (continue until you need user input or workflow ends)
 ```
 
+completed 后（Post-Completion Profile）建议模板：  
+- 不发送 `NODE_BRIEF` / step file / step markdown  
+- `RUN_DIRECTIVE` 不包含 `currentNodeId`  
+- 注入 Post-Run Protocol（允许继续对话与工具；状态变更需确认）
+
+```text
+RUN_DIRECTIVE
+- intent: continue
+- workflow: <workflowId or workflow.md path>
+- state: @state/workflow.md
+- graph: @pkg/<...>/workflow.graph.json
+- artifactsRoot: @project/artifacts/
+- effectiveAgentId: <agentId>
+- autopilot: true|false
+
+Protocol (post-run):
+1) This workflow is already completed. Do NOT assume there is an active step to execute.
+2) Continue as a normal conversation in Run mode: answer questions, review artifacts, and help the user iterate.
+3) Tools are still available. Use tools when helpful.
+4) If you need to modify @state/workflow.md (including changing completion status), you MUST ask the user for confirmation first.
+5) If the user confirms a state change and the workflow becomes non-completed, resume the normal workflow protocol on subsequent turns.
+```
+
 ### B) 用户原始输入（用户回答问题/补充信息）
 
 用于：runMode 下用户回答 step 的问题。建议 **带上 nodeId 标签**，避免模型把回答应用到错误 step（尤其是 resume/跨天）。
@@ -286,6 +309,13 @@ RUN_DIRECTIVE
 ```text
 USER_INPUT
 - forNodeId: <currentNodeId>
+<raw user text>
+```
+
+Post-Completion Profile（workflow 已 completed）下：不再有 active step，因此不绑定节点：
+
+```text
+USER_INPUT
 <raw user text>
 ```
 

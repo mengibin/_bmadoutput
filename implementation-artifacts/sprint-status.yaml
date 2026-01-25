@@ -117,6 +117,7 @@ development_status:
   7-3-create-context-builder-module: done
   7-4-create-context-compression-module: done
   7-5-integrate-context-builder-chat-mode: done
+  7-11-run-mode-post-completion-prompt-profile: review
 
   epic-8: in-progress
   8-4-project-data-management: review

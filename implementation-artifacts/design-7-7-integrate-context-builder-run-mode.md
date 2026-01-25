@@ -11,6 +11,8 @@
 2. **可恢复性**：重启后可从对话日志恢复 Run 进度
 3. **压缩集成**：删除 `trimHistory`，使用 `CompressionPipeline`
 
+补充（后续 Story）：当 workflow 已 `completed` 时进入 Post-Completion Prompt Profile，不再注入任何 “active step” 信息（不包含 currentStepId/currentStepName/outgoingEdges 等）。详见 Story 7-11。
+
 ---
 
 ## 改动概览

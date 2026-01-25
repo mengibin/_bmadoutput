@@ -18,13 +18,17 @@
    - 删除内存中的 `session.history`
    - 改为从对话日志读写
    - 允许内存缓存（但必须可从持久化重建）
-2. **Run 上下文注入**：`mode='run'` 时额外注入 `RUN_DIRECTIVE` + `NODE_BRIEF`
+2. **Run 上下文注入**：
+   - `mode='run'` 时注入 `RUN_DIRECTIVE`
+   - workflow 未完成且存在 active step 时注入 `NODE_BRIEF`
+   - workflow 已 completed（Post-Completion Profile）时不注入 step/node 信息（见 Story 7-11）
 3. **消息标记**：带 `runId` 区分多次运行
 4. **删除 trimHistory**：压缩逻辑移至 Context Compression 模块
 
 ## Out of Scope
 - UI 上下文指示器（Story 7.8）
 - 对话删除清理（Story 7.9）
+- workflow completed 后的 Post-Completion Prompt Profile（Story 7-11）
 
 ## Dependencies
 - **Story 7-5**: Integrate Context Builder into Chat Mode (done)

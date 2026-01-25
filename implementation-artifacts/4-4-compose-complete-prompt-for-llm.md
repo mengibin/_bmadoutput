@@ -28,8 +28,8 @@ so that the LLM receives full context and stays within runtime guardrails.
 2. **Machine-Parseable User Shells**
    - Emit strict blocks aligned with `_bmad-output/tech-spec/llm-conversation-protocol-openai.md`:
      - `RUN_DIRECTIVE` (start/continue/resume)
-     - `NODE_BRIEF` (at minimum: currentNodeId, stepFile, outputsMap, allowedNext)
-     - `USER_INPUT` (when applicable)
+     - `NODE_BRIEF` (当 workflow 未完成且存在 active step 时；至少包含 currentNodeId, stepFile, outputsMap, allowedNext)
+     - `USER_INPUT` (when applicable；Post-Completion Profile 不包含 `forNodeId`)
 
 3. **Security & Privacy**
    - NEVER expose real filesystem paths (e.g., `/Users/...`) to the LLM; only mount alias paths (`@project/...`, `@pkg/...`, `@state/...`)
@@ -51,6 +51,7 @@ so that the LLM receives full context and stays within runtime guardrails.
 
 - Compose prompts in fixed layers/order:
   - `mode=run`: Base Rules → Tool Policy → Persona → RUN_DIRECTIVE → NODE_BRIEF → USER_INPUT (optional).
+  - `mode=run`（Post-Completion Profile，workflow 已 completed）：Base Rules → Tool Policy → Persona → RUN_DIRECTIVE（含 Post-Run Protocol；不含 currentNodeId）→ USER_INPUT（无 `forNodeId`；可选）。不发送 `NODE_BRIEF`，不注入 step 内容。详见 Story 7-11。
   - `mode=agent`: Base Rules → Tool Policy → Persona → USER_INPUT (optional).
   - `mode=chat`: Base Rules → Tool Policy → USER_INPUT (optional). (No explicit agent persona, but tools still follow Tool Policy.)
 - `RUN_DIRECTIVE.graph` MUST use `@pkg/<graphRelPath>` from the selected workflow record (no hardcoded `@pkg/workflow.graph.json`).
@@ -77,7 +78,7 @@ so that the LLM receives full context and stays within runtime guardrails.
     - `- state: @state/workflow.md`
     - `- graph: @pkg/<graphRelPath>`
     - `- artifactsRoot: @project/artifacts/`
-    - `- currentNodeId: <currentNodeId>`
+    - `- currentNodeId: <currentNodeId>`（仅 workflow 未完成/存在 active step 时）
     - `- effectiveAgentId: <effectiveAgentId>`
     - `- autopilot: true|false`
   - `NODE_BRIEF` (minimum fields)
@@ -89,6 +90,8 @@ so that the LLM receives full context and stays within runtime guardrails.
     - `mode=run`（workflow 流程中）：
       - `- forNodeId: <currentNodeId>`
       - `<raw user text>`
+    - `mode=run`（Post-Completion Profile，workflow 已 completed）：
+      - `<raw user text>`（不绑定 node；不包含 `forNodeId`）
     - `mode=agent/chat`（非流程对话）：
       - `<raw user text>`（不需要绑定节点）
 
@@ -104,6 +107,7 @@ so that the LLM receives full context and stays within runtime guardrails.
 - Missing step file for `currentNodeId` → block (align with Story 4.2 load behavior).
 - `currentNodeId` invalid per graph → block (align with Story 4.3).
 - Variable sanitization: if injected variables contain absolute paths, redact/alias them before including in any message content.
+- Workflow already completed (Post-Completion Profile): do not inject active step info (`NODE_BRIEF`/stepFile/step markdown; omit `currentNodeId/forNodeId`). Keep `RUN_DIRECTIVE` with Post-Run Protocol and allow continued conversation. See Story 7-11.
 - Provider limitations: if a provider cannot handle multiple `system` messages, merge system layers before sending (LLMAdapter responsibility).
 
 ### Test Plan
@@ -147,6 +151,7 @@ Merged from: `_bmad-output/implementation-artifacts/validation-report-story-4-4.
 
 - 2026-01-01: Implemented PromptComposer prompt layering + strict shells + state variable sanitization; added unit tests.
 - 2026-01-01: Code review fixes: sanitize DataContext injection; keep variables summary as valid JSON when truncated.
+- 2026-01-24: Documented Post-Completion Run prompt profile (no active step injection); see Story 7-11.
 
 ## Dev Agent Record
 

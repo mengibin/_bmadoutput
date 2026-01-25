@@ -10,7 +10,9 @@ This spec proposes a **Codex-style** approach to conversation handling:
 2) For every LLM call (Chat / Agent / Run), build a request from:
    - **Dynamic System Prompt** (depends on current mode)
    - **Conversation context window** (selected from the unified log with strict budget rules)
-   - **Run-only injected context** (RUN_DIRECTIVE / NODE_BRIEF / step context) when in workflow execution
+   - **Run-only injected context**:
+     - workflow 未完成（active step 存在）：RUN_DIRECTIVE / NODE_BRIEF / step context
+     - workflow 已 completed（Post-Completion Profile）：仅 RUN_DIRECTIVE（含 Post-Run Protocol），不注入 step/node 信息
 
 Mode switching (Run / Agent / Chat) **does not reset history**; it only changes the system prefix used to build the next request.
 
@@ -319,7 +321,9 @@ Note: Conversation files under RuntimeStore are not directly readable by tools v
  - **Compression rule**: historical `role=system` messages are ignored by default, except for **summary-class system messages** (e.g., content starts with `SUMMARY` / `CONVERSATION_SUMMARY`) introduced in v2.
 
 **Run-only injection**
-- For mode=`run`, prepend existing run directive messages (RUN_DIRECTIVE + NODE_BRIEF + step context) as they are deterministic and often large.
+- For mode=`run`, prepend deterministic run directive messages:
+  - workflow 未完成（active step 存在）：RUN_DIRECTIVE + NODE_BRIEF（可选：step context）
+  - workflow 已 completed（Post-Completion Profile）：仅 RUN_DIRECTIVE（含 Post-Run Protocol），不注入 step/node 信息
 - The unified conversation log still stores the assistant/tool exchanges, errors, and user inputs.
 
 ---

@@ -70,14 +70,16 @@ RunPhase:
     └─(完成条件满足)→ Completed
   WaitingUser
     └─(用户输入 USER_INPUT)→ Running
-  Completed | Failed
+  Completed
+    └─(用户输入 USER_INPUT)→ Running（Post-Completion Profile；无 active step 注入）
+  Failed
 ```
 
 ### 3.1 UI 如何判断“停点”
 
 - 当 LLM 响应里 **存在 toolCalls**：UI 不停（继续内部循环）。
 - 当 LLM 响应里 **没有 toolCalls**：这是“用户可见停点”，UI 必须判断：
-  - `isWorkflowComplete(@state/workflow.md, graph) == true` → Completed（显示总结，结束）
+  - `isWorkflowComplete(@state/workflow.md, graph) == true` → Completed（显示“流程结束”标签；输入框仍可用，可继续对话）
   - 否则 → WaitingUser（显示 LLM 的问题/提示，打开输入框）
 
 ### 3.2 UI 如何更新进度（无需 LLM 维护“任务面板”）
@@ -140,9 +142,10 @@ async function onUserText(rawText: string) {
   if (isGlobalCommand(rawText)) return handleGlobalCommand(rawText) // /pause /stop /resume /menu ...
 
   const run = RunManager.get(Session.runId)
+  const completed = isWorkflowComplete(run.state, run.graph)
   run.pendingUserInputs.push({
     type: 'USER_INPUT',
-    forNodeId: run.state.currentNodeId,
+    ...(completed ? {} : { forNodeId: run.state.currentNodeId }),
     raw: rawText,
   })
   await pump(run, { intent: 'continue' })
@@ -158,7 +161,7 @@ async function pump(run: Run, directive: { intent: 'start' | 'continue' | 'resum
       run,
       directive,
       // 建议：只在 start/resume/用户刚回复/currentNodeId 或 effectiveAgentId 变化时
-      // 注入 RUN_DIRECTIVE + NodeBrief；其他轮次仅追加 tool 结果。
+      // 注入 RUN_DIRECTIVE；workflow 未完成时才注入 NodeBrief（completed 后进入 Post-Completion Profile：无 active step 注入）。
     })
 
     const response = await LLM.call({
@@ -183,6 +186,7 @@ async function pump(run: Run, directive: { intent: 'start' | 'continue' | 'resum
       if (isWorkflowComplete(run.state, run.graph)) {
         run.phase = RunPhase.Completed
         UI.setRunPhase(run.id, RunPhase.Completed)
+        // 注：Completed 只是 workflow 状态标签；输入框仍可用，用户可继续对话（Post-Completion Profile）。
         return
       }
 
@@ -250,7 +254,7 @@ RUN_DIRECTIVE
 
 ### 4.4 用户输入（USER_INPUT）
 
-当 WaitingUser 时，用户输入必须被包装并带上 `forNodeId`：
+当 workflow 未完成且处于 WaitingUser 时，用户输入必须被包装并带上 `forNodeId`：
 
 ```text
 USER_INPUT
@@ -259,6 +263,13 @@ USER_INPUT
 ```
 
 > 这样可避免 resume/跨天时把回答误用到错误节点。
+
+当 workflow 已 completed（Post-Completion Profile）时：不再有 active step，因此不绑定节点（省略 `forNodeId`）：
+
+```text
+USER_INPUT
+<raw user text>
+```
 
 ### 4.5 example：create-story-micro（Workflow-First）
 

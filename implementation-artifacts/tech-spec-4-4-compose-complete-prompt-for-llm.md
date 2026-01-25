@@ -12,13 +12,21 @@ The prompt is constructed in a fixed order of layers to establish context hierar
 
 **By mode:**
 
-- `mode=run` (workflow execution):
+- `mode=run` (workflow execution; workflow 未完成/存在 active step):
   1. System: BaseRuntimeRules (workflow/run)
   2. System: ToolPolicy
   3. System: Persona
   4. User: RunDirective
   5. User: NodeBrief
   6. User: UserInput (Optional, includes `forNodeId`)
+
+- `mode=run` (Post-Completion Profile; workflow 已 completed):
+  1. System: BaseRuntimeRules (workflow/run)
+  2. System: ToolPolicy
+  3. System: Persona
+  4. User: RunDirective (includes Post-Run Protocol; omits `currentNodeId`)
+  5. User: UserInput (Optional, no `forNodeId`)
+  - No `NodeBrief` and no step markdown injection in this profile. See Story 7-11.
 
 - `mode=agent` (agent session):
   1. System: BaseRuntimeRules (conversation)
@@ -105,7 +113,7 @@ interface ComposeInput {
 -   **Missing User Template**: Fallback to generic "Task" format.
 -   **Empty User Input**: Do not append the User Input layer.
 -   **Chat Mode Persona**: `mode=chat` MUST NOT inject Persona (chat stays generic); ToolPolicy still applies.
--   **User Input Binding**: `forNodeId` is only emitted in `mode=run`.
+-   **User Input Binding**: `forNodeId` is only emitted in `mode=run` when workflow is not completed (active step exists). Post-Completion Profile omits `forNodeId`. (See Story 7-11.)
 
 ## Testing Strategy
 -   **Unit Tests**: Verify string inclusion of critical instructions (Mounts, Tool Policy).
