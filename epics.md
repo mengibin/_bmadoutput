@@ -1,10 +1,10 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 9]
 inputDocuments:
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/prd.md'
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/architecture.md'
 workflowType: 'epics'
-lastStep: 3
+lastStep: 9
 project_name: 'CrewAgent'
 user_name: 'Mengbin'
 date: '2025-12-21'
@@ -1363,6 +1363,31 @@ So that I can reference project files in my conversation with the Agent and prov
 **Then** the attached files appear as tags above the text input
 **And** each tag shows the file name with a remove button
 
+---
+
+### Story 5.18: Python MCP Local Package Install and Run
+
+As a **Consumer**,
+I want to install a Python MCP server from a local zip or wheel file,
+So that I can use MCP servers distributed offline while still running them via module name.
+
+**Acceptance Criteria:**
+
+**Given** I add a Python MCP server in Settings
+**When** I provide Module and a local package file path
+**Then** Runtime installs the MCP server using bundled Python from that local file
+**And** dependencies may download online (no --no-index)
+
+**Given** installation succeeds
+**When** I run Test Connection
+**Then** Runtime starts the server with `python -m <module>` and discovers tools
+
+**Given** the local package file is removed after install
+**When** I run the MCP server again
+**Then** it still runs because it was installed into bundled site-packages
+
+> Detailed story: `_bmad-output/implementation-artifacts/5-18-python-mcp-local-install-and-run.md`
+
 **Given** I have attached files and typed a message
 **When** I send the message
 **Then** the message includes file metadata references (path, name)
@@ -1650,6 +1675,104 @@ So that I can leverage Gemini's capabilities for workflow execution.
 | Settings UI | Add Gemini provider option and fields |
 
 **Note:** Gemini supports OpenAI-compatible API format, so may reuse existing `OpenAICompatibleLlmAdapter` with different base URL.
+
+---
+
+### Epic 9: Advanced File Management & Editor Enhancements
+
+**Goal**: Enhance the Runtime Client's file management capabilities and editor experience to improve productivity for specialized file types.
+
+### Story 9.1: CSV/Excel Data Editor
+
+As a **Consumer**,
+I want to view and edit CSV/Excel files using a single, seamless Excel-like interface,
+So that I can preview data quickly and make edits without switching modes or apps.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to a `.csv`, `.xls`, or `.xlsx` file in the file explorer
+**When** I click the file
+**Then** it opens directly in the **Spreadsheet Editor** (jspreadsheet-ce)
+**And** there is no separate "Preview Only" mode — the viewer is the editor
+**And** I can sort columns, resize widths, and edit cell content
+
+**Given** I edit a cell
+**When** I save (Button or Ctrl+S)
+**Then** the file is updated on disk
+
+**Given** a large data file
+**When** I open it
+**Then** the UI remains responsive (loading data progressively or paginated)
+
+---
+
+### Story 9.2: Enhanced Markdown Editor (Split View + Toolbar)
+
+As a **Consumer**,
+I want to edit Markdown files in the Runtime Files view using an experience similar to the Builder,
+So that I have a consistent and powerful editing environment.
+
+**Acceptance Criteria:**
+
+**Given** I open a `.md` file in the Runtime Files/Workspace view and switch to **Edit** mode
+**When** the Markdown editor loads
+**Then** it uses the same/similar component as the Builder's Markdown editor
+**And** I see a toolbar with formatting options (Bold, Italic, Link, List, Table)
+**And** I see a "Split View" toggle (or default split layout: Editor Left, Preview Right)
+
+**Given** I am in Split View
+**When** I edit the markdown on the left
+**Then** the preview on the right updates in real-time
+**And** the visual style (theme, spacing, fonts) matches the Builder's implementation
+
+**Implementation Notes:**
+- Reference implementation: `crewagent-builder-frontend` (check `MarkdownEditor` or similar components).
+- Goal is to reuse logic/styles where possible or port the experience to Runtime.
+
+---
+
+### Story 9.3: Directory Structure Refresh
+
+As a **Consumer**,
+I want the file explorer to refresh directory structures quickly and accurately,
+So that I always see the current state of my project files.
+
+**Acceptance Criteria:**
+
+**Given** external changes happen to the project folder (e.g., file created/deleted by OS or tool)
+**When** the change occurs
+**Then** the Runtime file explorer updates automatically (VS Code style file watching)
+
+---
+
+### Story 9.4: File System Operations (Delete)
+
+As a **Consumer**,
+I want to delete files and folders from the file explorer,
+So that I can manage my project structure.
+
+**Acceptance Criteria:**
+
+**Given** I right-click a file or folder in the project tree
+**When** I select "Delete"
+**Then** a confirmation dialog appears
+**And** upon confirmation, the item (and its children if folder) is deleted
+**And** the file tree updates immediately
+
+---
+
+### Story 9.5: File System Operations (Move)
+
+As a **Consumer**,
+I want to move files and folders,
+So that I can reorganize my project.
+
+**Acceptance Criteria:**
+
+**Given** I drag a file/folder in the project tree
+**When** I drop it into another folder
+**Then** the item is moved to the new location
+**And** the file tree updates immediately
 
 ---
 
