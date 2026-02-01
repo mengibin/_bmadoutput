@@ -1388,6 +1388,20 @@ So that I can use MCP servers distributed offline while still running them via m
 
 > Detailed story: `_bmad-output/implementation-artifacts/5-18-python-mcp-local-install-and-run.md`
 
+---
+
+## Epic 10: Runtime License Verification (Hardware-Bound)
+
+**Goal**: 实现 Runtime 硬件绑定 + 离线激活许可体系，并在 Builder 提供离线发卡工具；为 SaaS 发卡阶段预留扩展。
+
+**Deliverables**:
+- Trial 试用期控制与功能锁定
+- Machine ID 生成与展示
+- 离线 License Key 验证（公钥验签）
+- Builder 离线发卡工具（私钥签名）
+
+> Epic Plan: `_bmad-output/implementation-artifacts/10-runtime-license-verification.md`
+
 **Given** I have attached files and typed a message
 **When** I send the message
 **Then** the message includes file metadata references (path, name)

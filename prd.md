@@ -219,6 +219,10 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-MNG-03**: System must maintain an **Execution Log** recording each tool call and its result for debugging.
 *   **FR-MNG-04**: Consumers can view the current **Workflow State** (which step is active, what's completed) in the Client UI.
 
+### License & Activation Capabilities
+*   **FR-LIC-01**: System must enforce a 15-day trial period and support hardware-bound offline license verification.
+*   **FR-LIC-02**: Detailed requirements for the licensing mechanism are defined in the **[Runtime License Verification PRD](prd-runtime-license-verification.md)**.
+
 ## Non-Functional Requirements
 
 ### Reliability & Availability

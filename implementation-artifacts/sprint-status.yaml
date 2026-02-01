@@ -1,4 +1,4 @@
-# generated: 2026-01-01T21:31:19+08:00
+# generated: 2026-02-01T10:28:40+08:00
 # project: CrewAgent
 # project_key: crewagent
 # tracking_system: file-system
@@ -34,7 +34,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2026-01-01T21:31:19+08:00"
+generated: "2026-02-01T10:28:40+08:00"
 project: "CrewAgent"
 project_key: "crewagent"
 tracking_system: "file-system"
@@ -122,3 +122,11 @@ development_status:
   epic-8: in-progress
   8-4-project-data-management: review
   epic-8-retrospective: optional
+
+  epic-10: in-progress
+  10-1-runtime-trial-gate-first-run: done
+  10-2-machine-id-generation: done
+  10-3-offline-license-verification: review
+  10-4-builder-license-generator: done
+  10-5-anti-tamper-persistence: done
+  epic-10-retrospective: optional
