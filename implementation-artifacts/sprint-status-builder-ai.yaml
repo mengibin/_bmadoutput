@@ -90,9 +90,9 @@ development_status:
   # bai-4-6-session-restore-on-refresh: canceled (de-scoped; no session restore on refresh)
   epic-bai-4-retrospective: optional
 
-  epic-bai-5: backlog
-  bai-5-1-security-redaction-secret-handling: backlog
-  bai-5-2-audit-event-pipeline: backlog
-  bai-5-3-metrics-alerting-baseline: backlog
-  bai-5-4-canary-rollout-legacy-decommission: backlog
+  epic-bai-5: in-progress
+  bai-5-1-security-redaction-secret-handling: done
+  bai-5-2-audit-event-pipeline: done
+  bai-5-3-metrics-alerting-baseline: done
+  bai-5-4-canary-rollout-legacy-decommission: done
   epic-bai-5-retrospective: optional

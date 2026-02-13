@@ -1,7 +1,7 @@
 # Builder AI 交付路线图（BMAD Method）
 
 **Created:** 2026-02-08  
-**Status:** In Progress (BAI-4 Multi-Target Backend Completed, Entering BAI-5 Prep)  
+**Status:** In Progress (BAI-5 Backend Hardening Baseline Completed, Awaiting Rollout Observation)  
 **Input Docs:**  
 - `_bmad-output/prd-builder-AI.md`  
 - `_bmad-output/architecture/builder-ai-llm-interaction-architecture.md`  
@@ -177,7 +177,7 @@
 3. 主链路已收敛为 `session + tool loop + stage/validate + manual apply`，legacy `step-draft` 已受控退场（`410 AI_STEP_DRAFT_DEPRECATED`）。
 4. 本轮新增语义已落地：Prompt 仅放 asset path（内容按需 `builder.asset.read`）、历史注入为“最近 6 条原文 + 更早 1 条摘要”、会话 working copy 生效、apply 后 session 保持 `active`。
 5. 后端全量测试通过（`188 passed`），前端测试通过（`34 passed`），lint 无 error（仅历史 warning）。
-6. `BAI-4.6`（刷新恢复）已取消（de-scope，不做 session refresh restore）；`BAI-4.7 ~ BAI-4.10` 已完成开发与回归并更新为 `done`（后端 workflow/agent/asset message 路径与四 target 回归已落地），下一阶段进入 Epic `BAI-5`（安全、审计、可观测与灰度上线）。
+6. `BAI-4.6`（刷新恢复）已取消（de-scope，不做 session refresh restore）；`BAI-4.7 ~ BAI-4.10` 已完成开发与回归并更新为 `done`（后端 workflow/agent/asset message 路径与四 target 回归已落地），`BAI-5.1 ~ BAI-5.4` 已完成后端基线实现（脱敏、审计、指标、灰度门禁），进入上线观察与阈值调优阶段。
 7. BAI-2 关闭补充（代码审查问题已清零）：
    - Prompt composer 运行链路统一为 `ComposeInput + compose_messages`。
    - Domain persona 已注入 step 主链路（不再 `domainProfile=None`）。
