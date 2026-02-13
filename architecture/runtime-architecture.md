@@ -280,3 +280,23 @@ LLM 工具只允许看到三类根：
 - **Subworkflow**（v1.2+）：利用 `callStack` 执行嵌套流程（见 runtime-spec.md 的建议）
 - **审批/权限**：对 `@project` 的写入可引入策略（例如只允许写 artifacts/ 与特定目录）
 - **索引/检索**：对 Project 与 artifacts 建立索引，提供 `search` / `semantic_retrieve` 工具
+
+---
+
+## 10. v1.2 升级附录（Subworkflow + Portable Skills）
+
+### 10.1 Subworkflow（运行态拆分）
+
+- 新增 `@state/run.md`：保存 `activeWorkflowId` 与 `callStack`
+- Workflow 状态拆分：`runs/<runId>/state/workflows/<workflowId>/workflow.md`
+- `@state/workflow.md` 作为当前激活 workflow 的别名，保持兼容
+
+### 10.2 Graph 扩展
+
+- `workflow.graph.json` 节点新增 `subworkflowRef` 与 `passContext`
+- `subworkflow` 节点要求单出边（返回边）
+
+### 10.3 Portable Agent Skills
+
+- `agents.json` 支持 `skills`（capabilities/imports）
+- Runtime 解析脚本并转译为工具 schema，按角色可见性暴露

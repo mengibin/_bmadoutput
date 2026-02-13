@@ -577,3 +577,22 @@ persona 继承硬约束：
     *   `npx create-next-app@latest crewagent-builder-frontend --typescript --tailwind --eslint --app --src-dir`
     *   `npm create @electron-vite@latest crewagent-runtime -- --template react-ts`
     *   Create `crewagent-builder-backend/` with FastAPI template.
+
+---
+
+## Appendix: v1.2 Upgrade Implications (Subworkflow + Portable Skills)
+
+### Subworkflow (Runtime)
+
+- 新增 `@state/run.md` 作为 run 级状态，保存 `activeWorkflowId` 与 `callStack`
+- workflow 状态拆分为 `runs/<runId>/state/workflows/<workflowId>/workflow.md`
+- `@state/workflow.md` 继续作为当前激活 workflow 的别名
+
+### Graph Extension
+
+- `workflow.graph.json` 节点新增 `subworkflowRef` 与 `passContext`
+
+### Agent Skills (Portable Skills)
+
+- `agents.json` 新增 `skills`（capabilities/imports）
+- Runtime 需支持脚本导入、工具注册与权限隔离

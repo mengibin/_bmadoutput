@@ -54,6 +54,14 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-MNG-03: System must maintain an Execution Log recording each tool call and result.
 - FR-MNG-04: Consumers can view the current Workflow State in the Client UI.
 
+**Upgrade Requirements (v1.2):**
+- FR-DEF-06: `workflow.graph.json` must support `subworkflowRef` and optional `passContext` on nodes.
+- FR-DEF-07: `agents.json` must support `skills` (capabilities + script imports).
+- FR-RUN-07: Runtime must support subworkflow call/return with `callStack` and recovery.
+- FR-RUN-08: Runtime must keep separate workflow state per workflow with `@state/workflow.md` alias.
+- FR-MNG-05: Runtime must expose hierarchical progress for nested workflows.
+- FR-SEC-03: Tools must be visible only when enabled by the agent’s `skills`.
+
 ### Non-Functional Requirements
 
 **Reliability & Availability:**
@@ -90,13 +98,17 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 |:---|:---|:---|
 | FR-DEF-01~04 | Epic 3 | Workflow definitions, Step Chaining, Agent Manifest, Package Export |
 | FR-DEF-05 | Epic 4 | Validate imported `.bmad` packages via JSON Schema |
+| FR-DEF-06~07 | Epic 11 | v1.2 spec upgrade: subworkflow refs + agent skills |
 | FR-BLD-01~05 | Epic 3 | Node Graph, Graph-First Editing, Agent Forms, Prompt Templates, One-Click Export |
 | FR-RUN-01~06 | Epic 4 | Package Load, Frontmatter State, Document-as-State, Agent Injection, Context Injection, Pause/Resume |
+| FR-RUN-07~08 | Epic 11 | Subworkflow call/return + per-workflow state |
 | FR-INT-01~04 | Epic 4 | Stdio MCP, stdout/stderr capture, FileSystem MCP, Sandboxed Access |
 | FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
+| FR-MNG-05 | Epic 11 | Hierarchical progress for nested workflows |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |
+| FR-SEC-03 | Epic 11 | Skill-based tool visibility |
 | NFR-USAB-01~02 | Epic 4, Epic 5 | Offline Mode, Local LLM Support |
 
 ## Epic List
@@ -161,6 +173,18 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 ---
 
+### Epic 11: BMAD Spec v1.2 Upgrade (Subworkflow + Portable Skills)
+**Goal**: Upgrade `.bmad` to v1.2 with nested workflows and agent-bound skills.
+**FRs covered**: FR-DEF-06~07, FR-RUN-07~08, FR-MNG-05, FR-SEC-03
+**Deliverables**:
+- v1.2 schemas for graph/frontmatter/agents
+- Run state split (`@state/run.md` + per-workflow `workflow.md`)
+- Subworkflow call/return + callStack recovery
+- Hierarchical progress reporting & UI
+- Skill import/registration + role-based tool visibility
+
+---
+
 ### Epic 8: Optimization & Enhancement
 **Goal**: Optimize user experience, improve system usability, and enhance runtime efficiency.
 **FRs covered**: N/A (non-functional improvements)
@@ -188,8 +212,6 @@ So that I can begin building the Visual Workflow Builder.
 **When** I run `npx create-next-app@latest crewagent-builder-frontend --typescript --tailwind --eslint --app --src-dir`
 **Then** the Next.js project is created with TypeScript, Tailwind CSS, ESLint, and App Router
 **And** I can run `npm run dev` and see the default Next.js page at `localhost:3000`
-
----
 
 ### Story 1.2: Initialize Builder Backend Repository
 
@@ -1804,3 +1826,71 @@ CrewAgent follows **BMad's "Document-as-State"** pattern:
 5. **No Parallel Execution** (MVP)
 
 This keeps the runtime simple while preserving LLM flexibility.
+
+---
+
+## Epic 11: BMAD Spec v1.2 Upgrade (Subworkflow + Portable Skills)
+
+**Goal**: Extend the package spec and runtime to support nested workflows and agent-bound skills.
+
+### Story 11.1: v1.2 Schema Upgrade
+
+As a **Runtime Developer**,  
+I want the `.bmad` schemas to include v1.2 fields for subworkflow and skills,  
+So that packages can be validated consistently.
+
+**Acceptance Criteria:**
+- Graph schema supports `subworkflowRef` and optional `passContext`.
+- Agents schema supports `skills.capabilities` and `skills.imports`.
+- Frontmatter schemas include v1.2 versioning.
+
+---
+
+### Story 11.2: Run State Split & Alias
+
+As a **Runtime Developer**,  
+I want a run-level state file with active workflow and callStack,  
+So that nested workflows can resume correctly.
+
+**Acceptance Criteria:**
+- `@state/run.md` stores `activeWorkflowId` and `callStack`.
+- Per-workflow state stored at `runs/<runId>/state/workflows/<workflowId>/workflow.md`.
+- `@state/workflow.md` maps to the active workflow state file.
+
+---
+
+### Story 11.3: Subworkflow Call/Return
+
+As a **Runtime Developer**,  
+I want subworkflow nodes to call and return deterministically,  
+So that nested flows complete and resume the parent flow.
+
+**Acceptance Criteria:**
+- Subworkflow node pushes callStack and switches active workflow.
+- Completion pops callStack and advances to the single return edge.
+- Cyclic subworkflow references are detected and rejected.
+
+---
+
+### Story 11.4: Hierarchical Progress
+
+As a **User**,  
+I want to see nested workflow progress,  
+So that I can track where the run is and what’s finished.
+
+**Acceptance Criteria:**
+- Backend exposes progress tree with active path.
+- UI renders nested progress with current node highlighted.
+
+---
+
+### Story 11.5: Portable Skills Runtime
+
+As a **Package Author**,  
+I want to bundle skills with my package and bind them to agents,  
+So that tools are portable and role-scoped.
+
+**Acceptance Criteria:**
+- Skill imports support single-file and `SKILL.md` bundle.
+- Tools are exposed only when enabled by the agent’s `skills`.
+- Skill load and tool calls are logged for audit.

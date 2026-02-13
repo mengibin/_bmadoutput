@@ -3,33 +3,46 @@ workflowType: "prd"
 lastStep: 11
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 date: "2026-01-29"
-project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
+project_name: "CrewAgent Builder：LLM 辅助 Workflow/Step/Agent/assets 创建与优化"
 ---
 
-# 产品需求文档（PRD）- CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化
+# 产品需求文档（PRD）- CrewAgent Builder：LLM 辅助 Workflow/Step/Agent/assets 创建与优化
 
 **Author:** TBD  
 **Date:** 2026-01-29  
 
 ---
 
+## 文档导航（给 LLM 与实现团队）
+
+- 技术架构详设：`_bmad-output/architecture/builder-ai-llm-interaction-architecture.md`
+- Epic/Story 拆分：`_bmad-output/epics-builder-ai.md`
+- 技术实现规格：`_bmad-output/tech-spec/builder-ai-implementation-spec.md`
+- 交付路线图：`_bmad-output/implementation-artifacts/builder-ai-delivery-roadmap.md`
+- 迭代状态跟踪：`_bmad-output/implementation-artifacts/sprint-status-builder-ai.yaml`
+
+---
+
 ## Executive Summary（执行摘要）
 
 ### Vision（愿景）
-让工作流设计者在 CrewAgent Builder 中，以「逐个对象（Step / Agent / assets）」的方式，借助 LLM 快速生成/优化符合 BMAD v1.1 规范的内容，并在一个独立的 AI 工作台页面（Chat + 变更预览 + 应用）内完成沟通与落地，显著降低流程搭建门槛与返工成本。
+让工作流设计者在 CrewAgent Builder 中，以「逐个对象（Workflow / Step / Agent / assets）」的方式，借助 LLM 快速生成/优化符合 BMAD v1.1 规范的内容，并在一个统一的 AI 工作台页面（Chat + 变更预览 + 应用）内完成沟通与落地，显著降低流程搭建门槛与返工成本。
 
 ### Problem（要解决的问题）
 1. **Step 编写成本高**：Step 的 Goal/Instructions/Completion（Document-as-State）需要细化到可执行、可校验；手写慢且容易遗漏。
 2. **规范容易写错**：`assets/`、`artifacts/` 路径、Python 路径、frontmatter 字段、Completion 状态更新等，容易出错导致导出/运行失败。
 3. **资产管理割裂**：Step 常需要政策/模板/脚本等静态参考，缺少「从 Step 需求出发、自动生成/更新 assets 并建立引用」的闭环。
 4. **Agent 定义不成体系**：Agent persona、prompts、工具策略等需要结构化表达且与工作流匹配；缺少“生成/优化 + 校验 + 预览应用”的一体化入口。
-5. **增量优化缺少抓手**：现有 Step/Agent/assets 在调试/迭代中需要不断“局部变更”，希望每次只影响选中对象（必要时连带 assets），而不是重写整包。
+5. **Workflow 级创建成本高**：workflow.md/frontmatter、steps index、graph 约束、入口节点等全局结构仍需人工拼装，容易与 Step/Agent 生成结果不一致。
+6. **增量优化缺少抓手**：现有 Workflow/Step/Agent/assets 在调试/迭代中需要不断“局部变更”，希望每次只影响选中对象（必要时连带 assets），而不是重写整包。
+7. **LLM 接入配置不够个性化**：不同用户使用不同模型、baseUrl、apiKey，但目前缺少“以用户为中心”的统一接入与体验规范。
 
 ### Target Users（目标用户）
 - 工作流/行业包设计者：产品经理、业务专家、解决方案架构师、AI 运营、开发者（负责把业务流程落成可执行工作流包）。
 - 使用场景：新建工作流、把现有 Step 规范化、补齐 Completion、补资产引用、提升可执行性与可维护性。
 
 ### Differentiator（差异化）
+- **Workflow + Step 双层生成**：既支持流程级骨架生成/优化，也支持节点级增量改写，保证全局与局部一致。
 - **逐 Step 增量建议**：一次只针对一个 Step 生成/优化，适配编辑器工作流（B 模式）。
 - **结构化输出 + 可预览应用**：LLM 输出必须结构化（建议 + assets patch + notes），Builder 侧提供预览与显式确认再应用。
 - **规范优先、可校验**：围绕 BMAD v1.1 的硬约束做 guardrails，减少“看起来对但导出/运行失败”的幻觉输出。
@@ -40,14 +53,14 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 ## Success Criteria（成功标准）
 
 ### Outcome Metrics（结果指标）
-1. **效率**：用户创建一个可导出/可运行的 Step（含必要 assets）的平均时间降低 ≥ 50%。
+1. **效率**：用户创建一个可导出/可运行的 Workflow（含步骤与必要 assets）的平均时间降低 ≥ 50%。
 2. **质量**：AI 生成/优化后，导出校验（v1.1）一次通过率 ≥ 90%（以“无 error 级别问题”为准）。
 3. **采用**：编辑器中 AI 功能的月活使用率（MAU 使用过 ≥1 次）≥ 30%（上线后 4-6 周）。
 4. **返工**：因规范错误（路径/frontmatter/缺段落）导致的人工修复次数降低 ≥ 40%。
 
 ### Release Gate（上线门槛）
-- 支持“逐 Step 创建/优化”完整闭环：生成 → 预览 → 应用 → 保存 → 导出校验可通过（示例工作流）。
-- 至少提供一种可用 LLM 模式（可为 mock/本地/自建 OpenAI-compatible）与可禁用开关。
+- 支持“Workflow + Step 创建/优化”完整闭环：生成 → 预览 → 应用 → 保存 → 导出校验可通过（示例工作流）。
+- LLM 接入配置以“每个用户”的 Profile 设置为准（baseUrl/model/apiKey/timeout/provider），并可被 AI 工作台即时读取。
 - 不引入高风险的数据泄露路径（见 NFR-安全）。
 
 ---
@@ -55,12 +68,14 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 ## Product Scope（范围）
 
 ### MVP（最小可用）
-1. **AI 工作台（新页面）**：在使用 AI 创建/优化 Step/Agent/assets 时打开独立页面，包含 Chat 窗口 + 变更预览 + Apply/Cancel。
-2. **逐 Step Create/Optimize**：用户提供 Prompt（Create 必填；Optimize 可选），生成/优化当前 Step 的建议内容（Goal/Instructions/Completion + frontmatter 相关字段），可预览/应用。
-3. **逐 Agent Create/Optimize**：生成/优化 Agent 定义（persona/prompts/tools 等），可预览/应用，保证 `agents.json` schema 可通过校验。
-4. **assets 建议与应用**：LLM 可返回 `assets/` 的 upsert/delete 建议；用户确认后，Builder 完成创建/更新/删除并刷新。
-5. **基础校验**：对建议做基础规范校验（如 schema、assets 路径合法、输出字段类型等）；失败时给出可读错误并允许重试。
-6. **记录与可追溯**：保留一次建议的 notes（至少在 AI 工作台页面展示；持久化可后置）。
+1. **统一 AI 工作台（新页面）**：在使用 AI 创建/优化 Workflow/Step/Agent/assets 时进入同一个工作台页面，包含统一 Chat 窗口 + 变更预览 + Apply/Cancel。
+2. **Workflow Create/Optimize**：用户提供 Prompt（Create 必填；Optimize 可选），生成/优化 workflow 级内容（workflow.md/frontmatter/steps index/全局变量建议/节点与边策略建议），可预览/应用。
+3. **逐 Step Create/Optimize**：用户提供 Prompt（Create 必填；Optimize 可选），生成/优化当前 Step 的建议内容（Goal/Instructions/Completion + frontmatter 相关字段），可预览/应用。
+4. **逐 Agent Create/Optimize**：生成/优化 Agent 定义（persona/prompts/tools 等），可预览/应用，保证 `agents.json` schema 可通过校验。
+5. **assets 建议与应用**：LLM 可返回 `assets/` 的 upsert/delete 建议；用户确认后，Builder 完成创建/更新/删除并刷新。
+6. **用户级 LLM 接入**：LLM provider/baseUrl/model/apiKey/timeout 使用每个用户在 Profile 中的自定义配置（现有页面需优化）。
+7. **基础校验**：对建议做基础规范校验（如 schema、assets 路径合法、输出字段类型等）；失败时给出可读错误并允许重试。
+8. **记录与可追溯**：保留一次建议的 notes（至少在 AI 工作台页面展示；持久化可后置）。
 
 ### Out of Scope（不做）
 - 自动生成整包/多 workflow 的“一键全量生成”（A 模式）。
@@ -80,30 +95,37 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 
 ### Journey 0：进入 AI 工作台（新页面）
 1. 用户在 Builder 中从某个入口点击“AI 创建/优化…”
+   - Workflow 入口：Workflow Editor 顶部工具栏/菜单 → AI Create/Optimize Workflow
    - Step 入口：Workflow Editor 中选中节点 → AI Create/Optimize
    - Agent 入口：Agent 列表/Agent 编辑器 → AI Create/Optimize
    - assets 入口：Assets 管理区或 Step 引用处 → AI Create/Optimize
 2. 系统通过路由跳转到一个新的页面（AI 工作台，单页应用内新 route，非新标签页），页面包含：
-   - Chat：用户与 AI 多轮对话（补充信息/澄清范围/确认假设）
-   - 变更预览：展示 AI 产出的结构化变更（对 Step/Agent/assets 的改动内容与清单）
+   - Chat：统一对话区（Workflow/Step/Agent/assets 共用同一交互形态，支持多轮追问）
+   - 变更预览：展示 AI 产出的结构化变更（对 Workflow/Step/Agent/assets 的改动内容与清单）
 3. 用户在工作台内确认：
    - Apply：将变更写回对应对象并返回/刷新原编辑页面
    - Cancel：不写入任何变更，返回原页面
 
-### Journey 1：生成一个新 Step（Create）
+### Journey 1：生成/优化 Workflow（Create/Optimize）
+1. 用户在 Workflow Editor 中点击 AI Create Workflow 或 AI Optimize Workflow。
+2. 系统打开 AI 工作台，用户输入目标流程/约束（Create 必填；Optimize 可选）。
+3. AI 返回 workflow 级建议（workflow.md/frontmatter、steps index、节点与边策略、变量建议），并展示影响面。
+4. 用户预览并 Apply 后，系统更新 workflow 级内容并触发一致性校验（与 graph/step/agent 引用一致）。
+
+### Journey 2：生成一个新 Step（Create）
 1. 用户在编辑器中选中一个节点（Step/Decision/Merge/End/Subworkflow）。
 2. 点击 AI Create Step（入口可在 Inspector 或节点操作菜单）。
 3. 系统打开 AI 工作台（新页面），用户输入 Prompt 并与 AI 对话澄清需求。
 4. 工作台展示建议：Step 内容 + 可选 assets patch + notes，并提供预览。
 5. 用户点击 Apply：系统将建议写入当前 Step，并应用 assets 变更；保存后通过导出校验。
 
-### Journey 2：优化当前 Step（Optimize）
+### Journey 3：优化当前 Step（Optimize）
 1. 用户选中一个已有 Step（可能缺 Completion 或 instructions 粗糙）。
 2. 点击 AI Optimize Step（Prompt 可选，例如“补齐 Document-as-State 规则，并把政策放到 assets/”）。
 3. 系统打开 AI 工作台（新页面），AI 基于当前 Step + 上下游/变量上下文给出增量改写建议。
 4. 预览 → Apply → 保存。
 
-### Journey 3：生成/优化 Agent（Create/Optimize）
+### Journey 4：生成/优化 Agent（Create/Optimize）
 1. 用户从 Agent 列表进入：
    - Create：点击“AI Create Agent”，输入目标职责与沟通风格等
    - Optimize：选择已有 Agent → 点击“AI Optimize Agent”，补齐 persona/prompts/tools 等
@@ -111,13 +133,18 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 3. 工作台展示建议：Agent 结构化定义（含 schemaVersion/persona/prompts/tools/menu 等）与 notes，并提供预览。
 4. Apply 后写回 `agents.json`（并确保 agentId 唯一与 schema 可校验）。
 
-### Journey 4：AI 建议创建/更新 assets
+### Journey 5：AI 建议创建/更新 assets
 1. AI 识别到 Step 需要政策/模板/脚本等静态资料。
 2. 返回 `assets/` 的 upsert（可包含新文件路径与内容）。
 3. 预览资产清单，用户确认后应用。
 4. Step 中应出现对 assets 的引用（例如 `assets/policies/...`），并符合规范。
 
-### Journey 5：失败与恢复
+### Journey 6：用户级 LLM 配置与生效
+- 用户在 Profile 页面设置个人 LLM 配置（provider/baseUrl/model/apiKey/timeout）。
+- 保存后 AI 工作台读取当前用户配置并生效；不同用户互不影响。
+- 当配置缺失或不可用时，工作台给出明确提示并引导跳转到 Profile 完善配置。
+
+### Journey 7：失败与恢复
 - AI 返回不合规（例如非法 assets 路径、缺关键段落）→ Builder 阻止应用并显示原因 → 用户可继续优化或手改。
 - 资产更新冲突/不存在等 → Builder 给出明确提示并允许重试或手动处理。
 
@@ -125,33 +152,36 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 
 ## Domain Requirements（领域/规范要求）
 
-1. Step 必须符合 BMAD v1.1 的 step.md 结构要求：
+1. Workflow 级生成必须符合 BMAD v1.1 workflow 约束：
+   - `workflow.md` frontmatter 至少包含 `schemaVersion`, `workflowType`, `currentNodeId`, `stepsCompleted`（如规范要求）。
+   - Workflow 级建议不得破坏 `workflow.graph.json` 的合法性（entry、nodes、edges、default 分支约束）。
+2. Step 必须符合 BMAD v1.1 的 step.md 结构要求：
    - YAML frontmatter 至少包含：`schemaVersion`, `nodeId`, `type`, `title`, `agentId`, `inputs`, `outputs`（若规范要求）。
    - 至少包含 `## Goal` 与 `## Instructions`；Completion 推荐采用 `## Completion (Document-as-State)` 语义（标题可由实现映射，但内容必须表达状态更新规则）。
-2. assets 使用规范：
+3. assets 使用规范：
    - 所有静态参考文件必须放在 `assets/` 下（如 `assets/policies/...`、`assets/templates/...`、`assets/scripts/...`）。
    - Step 中引用 assets 必须使用 `assets/...` 的包内相对路径（并与导出/运行工具路径规则一致）。
-3. artifacts 使用规范：
+4. artifacts 使用规范：
    - 动态生成产物必须落在 `artifacts/...` 目录语义下（并可映射到运行时 `@project/artifacts/...`）。
-4. 路径禁忌（防错要求）：
+5. 路径禁忌（防错要求）：
    - `@project/...` 与 `@pkg/...` 只允许出现在工具调用参数中；不得出现在 Python 代码里（如有 Python 片段必须使用相对路径）。
-5. Agent 定义规范（BMAD v1.1）
+6. Agent 定义规范（BMAD v1.1）
    - AI 生成/优化的 Agent 必须满足 `agents.json` v1.1 schema（含 `schemaVersion`, `agents[].id/metadata/persona` 等必填字段）。
    - `agentId`（即 `agents[].id`）必须符合 ID pattern，并在项目内唯一；MVP 中 **Optimize 不允许修改 agentId**（避免批量更新引用）。
    - Step/Graph 引用的 `agentId` 若不存在于 `agents.json`，前端必须给出明确告警（并阻止导出校验通过）。
-6. LLM Provider 配置规范（Builder AI）
+7. LLM Provider 配置规范（Builder AI，用户级）
    - Provider 需要支持至少三种状态：`disabled`（禁用）、`mock`（离线/演示）、`openai-compatible`（OpenAI 兼容接口）。
    - `openai-compatible` 至少需要以下配置项：`baseUrl`、`model`、`apiKey`（可选：当 endpoint 不需要鉴权时允许为空）、`timeoutSeconds`。
-   - 推荐的服务端环境变量命名（便于部署与排障）：`AI_PROVIDER`、`AI_BASE_URL`、`AI_MODEL`、`AI_API_KEY`、`AI_TIMEOUT_SECONDS`。
-   - 机密配置（如 `apiKey`）不得在前端明文持久化；默认以服务端环境变量/服务端配置为准。
-   - 当 provider 未配置或不满足必填项时，前端必须明确提示“不可用原因”（例如缺少 baseUrl/model），并禁止发起请求。
+   - 用户 Profile 页面是个人配置的唯一来源（现有页面需要优化可用性）；AI 工作台必须读取当前登录用户的配置。
+   - 机密配置（如 `apiKey`）不得在前端明文展示或写入可公开日志；UI 仅显示掩码。
+   - 当 provider 未配置或不满足必填项时，前端必须明确提示“不可用原因”（例如缺少 baseUrl/model/apiKey），并禁止发起请求。
 
 ---
 
 ## Innovation Analysis（创新点分析）
 
-- 用 LLM 做“逐 Step 的结构化建议生成”，不是自由写作：
-  - 输出必须能直接映射到 Step 的字段与段落；
+- 用 LLM 做“Workflow + Step 的结构化建议生成”，不是自由写作：
+  - 输出必须能映射到 workflow 级结构（frontmatter/index/graph 约束）与 step 级字段/段落；
   - assets 变更必须以 patch 形式列出；
   - Builder 必须作为守门员执行校验与预览确认，降低幻觉风险。
 - 该功能的价值来自“可应用、可校验、可回滚”的增量变更，而非一次性生成长文。
@@ -191,21 +221,22 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 - FR14：建议返回的 notes 必须在预览中展示（用于说明假设、风险、需要确认的信息）。
 
 ### E. LLM Provider 配置
-- FR15：系统必须提供 LLM provider 的配置入口（至少支持服务端配置），包含：`provider`、`baseUrl`、`model`、`apiKey`（如需要）、`timeoutSeconds`。
-- FR16：前端必须展示当前 provider 可用性状态（可用/禁用/未配置）及失败原因，并在不可用时禁用 Generate/Optimize。
-- FR17：系统应提供“连接测试/健康检查”能力（MVP 可选），用于验证 baseUrl/model 配置是否可正常返回。
+- FR15：系统必须使用每个用户在 Profile 中配置的 LLM 接入参数（`provider`、`baseUrl`、`model`、`apiKey`、`timeoutSeconds`）作为 AI 调用唯一来源。
+- FR16：前端必须展示当前用户 provider 可用性状态（可用/禁用/未配置）及失败原因，并在不可用时禁用 Generate/Optimize。
+- FR17：Profile 页面需优化为面向 AI 工作台的配置入口（包含连接测试/健康检查），用于验证 baseUrl/model/apiKey 配置是否可正常返回。
 
 ### F. AI 工作台（新页面：Chat + 变更预览）
-- FR18：当用户从 Step/Agent/assets 的 AI 入口进入时，系统必须通过路由跳转打开一个独立的 AI 工作台页面（同站内新 route，默认同标签页）。
-- FR19：AI 工作台页面必须包含两块核心区域：**Chat 对话区** 与 **变更预览区**（展示本次将修改的 Step/Agent/assets 内容与清单）。
+- FR18：当用户从 Workflow/Step/Agent/assets 的 AI 入口进入时，系统必须通过路由跳转打开一个独立的 AI 工作台页面（同站内新 route，默认同标签页）。
+- FR19：AI 工作台页面必须包含两块核心区域：**统一 Chat 对话区** 与 **变更预览区**（展示本次将修改的 Workflow/Step/Agent/assets 内容与清单）。
 - FR20：Chat 必须支持多轮对话：AI 可以追问缺失信息；用户补充后，预览区应更新为新的建议版本（以“最新建议”为准）。
 - FR21：工作台必须提供 Apply/Cancel：Apply 将变更写回项目并回到原编辑页面；Cancel 不写入任何变更。
 - FR22：工作台必须展示本次建议的影响范围（例如“将修改：step-xx；将 upsert：assets/policies/...；将更新：agentId=...”）。
 - FR22b：AI 工作台 route 必须可携带“入口上下文”（例如 projectId + targetType + targetId + mode），以便页面刷新后仍能恢复当前会话与预览（MVP 可仅恢复目标定位与草稿，不强制持久化完整对话）。
 
 ### G. Context Prompt 构造（按入口）
-- FR23：系统必须根据入口类型与动作选择对应的 Context Prompt 模板：`Step.Create`、`Step.Optimize`、`Agent.Create`、`Agent.Optimize`、`Asset.Create`、`Asset.Optimize`。
-- FR24：Step 入口的上下文至少包含：当前节点信息（type/title/agentId/inputs/outputs/setsVariables）、当前 Step 内容（Optimize 必填）、上下游边信息、workflow variables keys、可用 agent 列表、被引用的 assets 路径（可选包含内容）。
+- FR23：系统必须根据入口类型与动作选择对应的 Context Prompt 模板：`Workflow.Create`、`Workflow.Optimize`、`Step.Create`、`Step.Optimize`、`Agent.Create`、`Agent.Optimize`、`Asset.Create`、`Asset.Optimize`。
+- FR24：Workflow 入口上下文至少包含：workflow.md/frontmatter、workflow.graph 关键摘要（entry/nodes/edges/default 分支信息）、workflow variables keys、关联 Step/Agent 概览。
+- FR24b：Step 入口的上下文至少包含：当前节点信息（type/title/agentId/inputs/outputs/setsVariables）、当前 Step 内容（Optimize 必填）、上下游边信息、workflow variables keys、可用 agent 列表、被引用的 assets 路径（可选包含内容）。
 - FR25：Agent 入口的上下文至少包含：当前 Agent 定义（Optimize 必填）、项目内现有 agents 列表（避免重复/冲突）、该 agent 在 workflow nodes 中的引用概览（影响面）、工具策略约束与 schema 要求。
 - FR26：assets 入口的上下文至少包含：目标 assets 路径与类型（policy/template/script 等）、现有内容（Optimize 必填）、引用它的 Step 列表/片段（影响面）、路径与扩展名约束。
 - FR27：Context Prompt 必须遵循最小化原则，并在工作台展示“本次上下文摘要”（用户能看到将发送哪些对象/文件，MVP 可不支持细粒度勾选，但必须可见）。
@@ -215,6 +246,17 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 - FR29：系统必须支持 AI Optimize Agent：在保留 `agentId` 不变的前提下优化 persona/prompts/tools 等字段，并可预览/应用。
 - FR30：系统必须在应用前校验 agentId 唯一性与 schema 合法性；校验失败时不得写入，并提供可操作的错误信息。
 - FR31：工作台必须展示该 Agent 的引用范围（例如被哪些节点引用），帮助用户评估修改影响。
+
+### I. Workflow 创建与优化（新增）
+- FR32：系统必须支持 AI Create Workflow：基于用户目标生成 workflow 级建议（workflow.md/frontmatter、steps index、节点与连线策略）。
+- FR33：系统必须支持 AI Optimize Workflow：在不破坏现有项目数据的前提下优化流程结构、变量与入口策略，并提供影响范围预览。
+- FR34：Workflow 级 Apply 必须进行一致性校验（workflow/frontmatter、graph、Step/Agent 引用）后才允许写入。
+- FR35：Workflow 级建议应支持“仅建议不直接改图”的模式（先预览确认，再触发具体更新动作）。
+
+### J. 统一对话界面（新增）
+- FR36：Workflow/Step/Agent/assets 的 AI 能力必须共用同一套对话界面组件与交互规范（消息流、状态、错误提示、重试）。
+- FR37：统一对话界面必须显示当前目标对象与模式（Create/Optimize），避免跨对象误操作。
+- FR38：统一对话界面必须支持会话上下文恢复（至少恢复目标定位与最近一次建议预览）。
 
 ---
 
@@ -227,7 +269,8 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 ### Security & Privacy（安全与隐私）
 - NFR3：必须支持“只允许自建/本地 OpenAI-compatible 端点”或“完全禁用外部调用”的部署策略。
 - NFR4：不得在客户端/日志中泄露密钥、token 或敏感配置。
-- NFR5：对发送给 LLM 的上下文必须遵循最小化原则（仅限当前目标对象：Step/Agent/assets 相关内容与必要引用）。
+- NFR5：对发送给 LLM 的上下文必须遵循最小化原则（仅限当前目标对象：Workflow/Step/Agent/assets 相关内容与必要引用）。
+- NFR5b：用户级 `apiKey` 必须隔离存储与读取，不得跨用户复用或透传到其他用户会话。
 
 ### Reliability（可靠性）
 - NFR6：AI 服务不可用时，Builder 的核心编辑/保存/导出流程不受影响。
@@ -240,6 +283,8 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 - NFR9：用户必须能在 1-2 次操作内完成“生成 → 预览 → 应用”闭环。
 - NFR10：错误信息必须面向非工程用户可理解（优先描述“哪里不符合规范/如何修复”）。
 - NFR11：AI 工作台页面应支持无损返回：用户取消/返回后，原编辑页面的未保存修改不得丢失（避免 AI 打断编辑流）。
+- NFR12：Profile 中 LLM 配置编辑流程应在 1 分钟内可完成（输入、测试、保存、回到 AI 工作台继续操作）。
+- NFR13：统一对话界面在四类对象上保持一致的操作路径与视觉反馈，减少学习成本与误操作。
 
 ---
 
@@ -252,8 +297,15 @@ project_name: "CrewAgent Builder：LLM 辅助 Step/Agent/assets 创建与优化"
 5. 成本控制：是否需要每次请求的 token/字数上限，以及超限策略？
 6. AI 工作台对话是否需要持久化（用于审计/回溯/复用）？若需要，存储范围与脱敏策略是什么？
 7. 预览区是否需要支持“部分应用”（例如只应用 Step，不应用 assets patch；或仅应用 persona，不动 prompts）？
+8. 当 Profile 的用户级配置与服务端默认配置冲突时，最终优先级策略如何定义（用户优先或组织策略覆盖）？
 
 ---
 
 ## Next Steps（下一步建议）
-- 在该 PRD 基础上进入：Architecture（接口、数据结构、存储与鉴权策略）→ Epics & Stories（按 FR/NFR 拆解到可交付迭代）。
+- 当前阶段建议进入开发执行：
+  1) 先落地 M1（用户级 LLM Profile + Session + validate-only）  
+  2) 再落地 M2（原子 apply + revision 并发控制）  
+  3) 接入 M3（统一 AI Workbench 四入口）  
+  4) 最后完成 M4（安全、审计、灰度上线）
+- 交付顺序与门禁详见：`_bmad-output/implementation-artifacts/builder-ai-delivery-roadmap.md`。
+- 每个 Story 状态维护在：`_bmad-output/implementation-artifacts/sprint-status-builder-ai.yaml`。

@@ -1,0 +1,98 @@
+# generated: 2026-02-12T11:18:00+08:00
+# project: CrewAgent Builder AI
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# Epic Status:
+# - backlog
+# - in-progress
+# - done
+#
+# Story Status:
+# - backlog
+# - ready-for-design
+# - ready-for-dev
+# - in-progress
+# - review
+# - done
+#
+# semantic-freeze (2026-02-10):
+# - BAI-2.1: Prompt Composer must use layered `compose_messages` and include schema-first guardrails.
+# - BAI-1.1~1.5: LLM profile foundation aligned to session/messages gateway; provider enum is `disabled|openai-compatible` only.
+# - BAI-1.5: org policy modes are `allow-all|disable-all|allow-openai-compatible-only` (no `allow-mock-only`).
+# - BAI-2.5: Tool loop is function-call multi-turn; whitelist is read + stage/validate/discard; apply is forbidden in-model.
+# - BAI-3.2: `builder.change.validate` validates current session overlay (validate-only, no business writes).
+# - BAI-3.3: apply path is `stage -> validate -> manual apply`; requires manual confirm source.
+# - BAI-3.4: single-writer MVP uses `AI_REVISION_BASE_MISMATCH` warning + recoverability; DB atomic locking deferred.
+# - BAI-3.5: legacy `ai/step-draft` decommissioned; step flow unified to workbench session/messages loop.
+# - BAI-4.2: chat shows summary-only (no full file payload in conversation panel).
+# - BAI-4.3: diff baseline is fixed `base vs latest overlay`.
+# - BAI-4.4: HTTP keeps `cancel` naming; cancel semantics are session cancel + discard overlay (no business mutation).
+# - BAI-4.7~4.10: BAI-4 backend completion delivered; `/messages` now supports workflow/step/agent/asset (not step-only).
+# - BAI-4.7~4.10 review closure (2026-02-12):
+#   - invalid target/context requests no longer append user message into ai_messages.
+#   - `AI_TARGET_CONTEXT_REQUIRED` is now explicitly returned when target context fallback fails.
+#   - frontend sender no longer hard-limits to step target; workflow/agent/asset payloads are passed through.
+# - Stabilization hotfixes (2026-02-11 PM):
+#   - Editor autosave keeps canonical `stepFilePath/node.file` to avoid apply-after-return mismatch.
+#   - Step markdown frontmatter rendering now escapes YAML-sensitive content and keeps valid list syntax.
+#   - Creating a new AI session clears project-level working copy rows for current user to avoid stale overlay bleed-through.
+# - BAI-2 closure fixes (2026-02-11 night):
+#   - Step runtime now consumes `build_initial_context_envelope` -> `trim_context_with_budget` -> `compose_messages`.
+#   - `ComposeInput.domainProfile` is sourced from envelope `domain_profile` (no runtime `domainProfile=None` fallback path).
+#   - Context budget top-level key validation is order-insensitive (set equality), reducing false validation failures.
+
+generated: "2026-02-12T11:18:00+08:00"
+project: "CrewAgent Builder AI"
+project_key: "crewagent-builder-ai"
+tracking_system: "file-system"
+story_location: "_bmad-output/implementation-artifacts"
+roadmap: "builder-ai-delivery-roadmap.md"
+epics: "_bmad-output/epics-builder-ai.md"
+tech_spec: "_bmad-output/tech-spec/builder-ai-implementation-spec.md"
+
+development_status:
+  epic-bai-1: done
+  bai-1-1-add-user-llm-profiles-data-model: done
+  bai-1-2-implement-llm-profile-get-put-apis: done
+  bai-1-3-implement-llm-profile-test-api: done
+  bai-1-4-wire-profile-into-ai-gateway: done
+  bai-1-5-org-policy-override-hook: done
+  epic-bai-1-retrospective: done
+
+  epic-bai-2: done
+  bai-2-1-build-prompt-composer-layering-engine: done
+  bai-2-2-build-domain-persona-resolver: done
+  bai-2-3-build-initial-context-envelope: done
+  bai-2-4-implement-semantic-read-tools: done
+  bai-2-5-implement-toolcall-loop-controller: done
+  bai-2-6-context-budget-trimming-policy: done
+  epic-bai-2-retrospective: done
+
+  epic-bai-3: done
+  bai-3-1-define-changeset-json-schema: done
+  bai-3-2-implement-changeset-validate: done
+  bai-3-3-implement-changeset-apply-transaction: done
+  bai-3-4-add-revision-based-concurrency-check: done
+  bai-3-5-decommission-legacy-step-draft-optimizer: done
+  epic-bai-3-retrospective: optional
+
+  epic-bai-4: done
+  bai-4-1-create-ai-workbench-route-shell: done
+  bai-4-2-implement-conversation-pane: done
+  bai-4-3-implement-change-preview-pane: done
+  bai-4-4-implement-apply-cancel-flow: done
+  bai-4-5-connect-four-entrypoints: done
+  bai-4-7-expand-session-message-contract-multi-target: done
+  bai-4-8-implement-workflow-target-session-message: done
+  bai-4-9-implement-agent-asset-target-session-message: done
+  bai-4-10-add-four-target-backend-e2e-regression: done
+  # bai-4-6-session-restore-on-refresh: canceled (de-scoped; no session restore on refresh)
+  epic-bai-4-retrospective: optional
+
+  epic-bai-5: backlog
+  bai-5-1-security-redaction-secret-handling: backlog
+  bai-5-2-audit-event-pipeline: backlog
+  bai-5-3-metrics-alerting-baseline: backlog
+  bai-5-4-canary-rollout-legacy-decommission: backlog
+  epic-bai-5-retrospective: optional

@@ -4,17 +4,19 @@ inputDocuments:
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/product-brief-CrewAgent-2025-12-20.md'
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/research/technical-architecture-decision-research-2025-12-20.md'
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/brainstorming-session-2025-12-19.md'
+  - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/prd-builder-AI.md'
 documentCounts:
   briefs: 1
   research: 1
   brainstorming: 1
-  projectDocs: 0
+  projectDocs: 1
 workflowType: 'prd'
 lastStep: 11
 workflowComplete: true
 project_name: 'CrewAgent'
 user_name: 'Mengbin'
 date: '2025-12-20'
+updated: '2026-02-08'
 ---
 
 # Product Requirements Document - CrewAgent
@@ -239,11 +241,39 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 ---
 
+## Linked Requirement Documents
+
+- **Builder AI Workbench requirements (separate source of truth):**
+  `_bmad-output/prd-builder-AI.md`
+- This main PRD intentionally keeps AI details out-of-line; AI Step/Agent/assets requirements are maintained in the linked document so they can be revised independently.
+
 ## Appendix A — Runtime Client Detailed Spec (MVP)
 
 > 本附录将 `_bmad-output/tech-spec/runtime-spec.md` 的内容并入 PRD，作为 Runtime 需求/约束的更细化版本（Cursor 风格：工具硬实现，流程由 LLM 驱动；ToolCalls 优先，MCP 预留）。
 >
 > `.bmad` 包格式（schemas/templates/examples）的权威技术规范见：[`_bmad-output/tech-spec.md`](tech-spec.md)。
+
+---
+
+## Appendix B — v1.2 Upgrade Requirements (Subworkflow + Portable Skills)
+
+### Definition & Package Format
+
+*   **FR-DEF-06**: `workflow.graph.json` must support `subworkflowRef` and optional `passContext` on nodes.
+*   **FR-DEF-07**: `agents.json` must support a `skills` object for capabilities and script imports.
+
+### Runtime Execution
+
+*   **FR-RUN-07**: Runtime must support subworkflow call/return with a callStack and recovery.
+*   **FR-RUN-08**: Runtime must keep separate workflow state per workflow while preserving `@state/workflow.md` alias semantics.
+
+### Observability
+
+*   **FR-MNG-05**: Runtime must expose hierarchical progress for nested workflows.
+
+### Security & Control
+
+*   **FR-SEC-03**: Tools must be visible only when enabled by the agent’s `skills` (role-based control).
 
 ### A.1 `.bmad` 包（v1.1）约定
 
@@ -394,5 +424,3 @@ This document serves as the **Capability Contract** for CrewAgent. All downstrea
 1. **Create Architecture** (`/bmad-bmm-workflows-create-architecture`) - Define system design based on technical constraints.
 2. **Create Epics & Stories** (`/bmad-bmm-workflows-create-epics-and-stories`) - Break down FRs into implementable work units.
 3. **Create UX Design** (`/bmad-bmm-workflows-create-ux-design`) - Design the Visual Builder and Client UI.
-
-

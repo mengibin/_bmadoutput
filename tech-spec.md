@@ -1,14 +1,16 @@
 ---
 project_name: "CrewAgent"
 date: "2025-12-23"
+updated: "2026-02-04"
 sources:
   - "crewagent-runtime/spec/bmad-package-spec/v1.1/README.md"
   - "crewagent-runtime/spec/bmad-package-spec/v1.1/schemas/*.json"
   - "crewagent-runtime/spec/bmad-package-spec/v1.1/templates/*"
   - "crewagent-runtime/spec/bmad-package-spec/v1.1/examples/*"
+  - "crewagent-runtime/spec/tech-spec-subworkflow.md"
 ---
 
-# Technical Specification — `.bmad` Package Spec v1.1
+# Technical Specification — `.bmad` Package Spec v1.2 (Upgrade Plan)
 
 本技术规范用于指导 **CrewAgent Runtime（Electron）** 加载与执行 `.bmad` 工作流包，并作为 Builder 导出/Runtime 导入的契约（Contract）。
 需求侧（Runtime 的行为约束与验收）参见：[`_bmad-output/prd.md`](prd.md) 的 “Appendix A — Runtime Client Detailed Spec (MVP)”。
@@ -26,6 +28,13 @@ sources:
 - 原则：用结构化图数据保证 Builder/Runtime **可校验、可恢复**；用 `workflow.md` frontmatter 保持 **Document-as-State**。
 
 > 本文将 `crewagent-runtime/spec/bmad-package-spec/v1.1/README.md` 及其配套的 schemas/templates/examples 合并为一份可执行的规范文档。
+
+## 0.1 v1.2 升级范围（Subworkflow + Portable Skills）
+
+- **Subworkflow**：新增子流程引用与 call/return 语义，支持调用栈恢复。
+- **Run State 拆分**：新增 `@state/run.md` 记录 `activeWorkflowId` 与 `callStack`，每个 workflow 独立状态文件。
+- **Agent Skills**：新增 `skills` 结构，明确能力与包内脚本导入，工具权限与角色绑定。
+- **进度监控**：支持层级化进度树与当前路径高亮。
 
 ---
 
@@ -58,7 +67,7 @@ sources:
 - `workflow.graph.json`：**权威图真源**（nodes/edges/条件/默认分支）。Builder 以此渲染画布；Runtime 以此校验状态跳转。
 - `workflow.md`：给人/LLM看的入口文档；Frontmatter 记录运行状态（Document-as-State）。正文建议包含 steps 索引链接，便于 LLM 快速定位 step 文件。
 - `steps/*.md`：每个节点一个文件（Step/Decision/Merge/End/Subworkflow 也都可以是一个 node），写清本步目标、产物、变量、以及“如何更新 workflow.md”。
-- `agents.json`：Agent persona 清单（对齐 BMAD 信息结构：`metadata`/`persona`/`critical_actions`/`prompts`/`menu`/`tools`）。
+- `agents.json`：Agent persona 清单（对齐 BMAD 信息结构：`metadata`/`persona`/`critical_actions`/`prompts`/`menu`/`tools`/`skills`）。
 
 ## 3. 分支（if/branch）语义
 
@@ -221,6 +230,17 @@ transitions:
       "tools": {
         "fs": { "enabled": true, "maxReadBytes": 524288, "maxWriteBytes": 1048576 },
         "mcp": { "enabled": false, "allowedServers": [] }
+      },
+      "skills": {
+        "capabilities": {
+          "filesystem": { "enabled": true },
+          "python": { "enabled": true },
+          "browser": { "enabled": false }
+        },
+        "imports": [
+          { "name": "policy_checker", "source": "assets/skills/compliance_tools.py" },
+          { "source": "assets/skills/finance-tools/" }
+        ]
       }
     }
   ]
@@ -228,6 +248,30 @@ transitions:
 ```
 
 ---
+
+## 6.4 v1.2 扩展要点（规范增量）
+
+### 6.4.1 Graph Node 扩展（Subworkflow）
+
+- `workflow.graph.json` 节点新增字段：
+  - `subworkflowRef`: 指向 `bmad.json.workflows[].id`
+  - `passContext`: 是否把父流程 artifacts / variables 注入子流程（可选）
+
+### 6.4.2 Run State 拆分
+
+- 新增 `@state/run.md`（run 级）：
+  - `activeWorkflowId`
+  - `callStack: Array<{ workflowId, nodeId }>`
+- workflow 状态拆分：
+  - `runs/<runId>/state/workflows/<workflowId>/workflow.md`
+- `@state/workflow.md` 保持兼容，作为“当前激活 workflow”的别名。
+
+### 6.4.3 Agent Skills（Portable Skills）
+
+- `agents.json` 支持 `skills`：
+  - `capabilities`: filesystem/python/browser
+  - `imports`: 单文件脚本或 `SKILL.md` 包
+- Runtime 将脚本函数转译为 Function Calling Schema，按角色可见性暴露工具。
 
 ## 7. 示例（Examples）
 

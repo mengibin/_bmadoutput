@@ -174,25 +174,48 @@ MVP 可以先把 MCP 做成“禁用/占位”，只做接口不做实现，避�
 5) （可选）增加 `runtime.update_state`/`runtime.complete_node` 严格模式
 6) 之后再引入 MCP（stdio driver）与审批/权限
 
-## 7. 流程嵌套（Sub-Workflow）支持吗？
+## 7. 流程嵌套（Sub-Workflow，v1.2 升级）
 
-支持（建议 v1.2+ 明确约定）。做法是把“调用子流程”建模成一种 **Node 类型**，runtime 用 **调用栈（callStack）** 驱动执行与恢复。
+v1.2 明确 Subworkflow 的**调用/返回语义**与**运行态拆分**。核心原则：一个 run 内可切换多个 workflow，但仍使用单一 `runId`。
 
-### 7.1 数据结构建议
+### 7.1 数据结构（v1.2）
 
-- 在 `step-xx.md` 的 Frontmatter 增加：
-  - `type: "step" | "subworkflow"`（默认 `step`）
-  - `subworkflow: "./subflows/foo/workflow.md"`（当 `type=subworkflow`）
-  - `passContext: true|false`（是否把父流程 artifacts/inputDocuments 注入子流程）
+- **Graph Node 扩展**（`workflow.graph.json`）：
+  - `subworkflowRef`: 指向 `bmad.json.workflows[].id`
+  - `passContext: true|false`（可选）
 
-- 在根 `workflow.md` Frontmatter 增加（用于 pause/resume）：
-  - `callStack: Array<{ workflow: string; nodeId: string }>`（保存“当前执行到哪个子流程”）
+- **Run 级状态**（`@state/run.md`）：
+  - `activeWorkflowId: string`
+  - `callStack: Array<{ workflowId: string; nodeId: string }>`
 
-### 7.2 执行语义（推荐：call/return）
+- **Workflow 级状态**：
+  - `runs/<runId>/state/workflows/<workflowId>/workflow.md`
+
+- **兼容别名**：
+  - `@state/workflow.md` 始终映射到当前 `activeWorkflowId` 对应的 workflow 状态文件。
+
+### 7.2 执行语义（call/return）
 
 当 runtime 执行到 `type=subworkflow`：
-1) 将 `{ workflow: childPath, nodeId: currentNodeId }` push 到 `callStack`
-2) 进入子流程：按子流程自己的 `workflow.md` + `steps/` 执行，直到子流程完成
-3) pop `callStack`，把父流程该 step 标记完成，并合并子流程产物到父流程 `artifacts`
+1) `@state/run.md` push `{ workflowId: parentId, nodeId: currentNodeId }`
+2) 切换 `activeWorkflowId = subworkflowRef`
+3) 执行子流程直至完成
+4) pop `callStack`，切回父流程并推进到返回边（`subworkflow` 节点要求单出边）
 
-> 需要做循环依赖检测（防止 A→B→A）与最大嵌套深度限制。
+> 需要循环依赖检测（防止 A→B→A）与最大嵌套深度限制。
+
+## 8. Portable Agent Skills（v1.2 升级）
+
+### 8.1 规范要点
+
+- `agents.json` 新增 `skills`：
+  - `capabilities`: filesystem/python/browser
+  - `imports`: 单文件脚本或 `SKILL.md` 包
+- Skill 与 Agent 绑定：未授权能力的工具不可见。
+
+### 8.2 运行时加载
+
+1) 解析 `skills.imports`，加载脚本或 Skill 包入口文件  
+2) 转译函数 → Tool schema（命名空间隔离）  
+3) 按需安装 `deps`（可配置开关）  
+4) 记录审计：`skill.load`、`skill.call`、`skill.error`
