@@ -71,7 +71,7 @@ date: '2026-02-27'
 - `media.extract` first-class tool + `fs.read` 二进制 fallback 策略。
 - 聊天拖拽文件/文件夹输入 + 递归发现 + 批处理抽取。
 - schema provided/generated 双路径 + strict 校验。
-- 标准输出 `@project/artifacts/extracted-data.json`。
+- 默认返回结构化提取结果（可选持久化到 `@project/artifacts/extracted-data.json`）。
 - 提取日志与关键指标。
 - E2E 验收用例（混合文件、模型不支持、损坏文件）。
 
@@ -119,6 +119,11 @@ So that LLM follows the direct multimodal path safely.
 **Then** tool returns `ok/data/path/page` (or structured error)  
 **And** output contains `schemaSource` and `schemaUsed` when applicable.
 
+**Given** an OpenAI-compatible provider that rewrites tool names with hyphens  
+**When** assistant tool calls return names like `media-extract`  
+**Then** runtime decodes/routes them back to `media.extract` deterministically  
+**And** extraction does not get misrouted to unrelated tools.
+
 **Given** `fs.read` is called on binary/image/PDF  
 **When** tool processes request  
 **Then** it does not return garbled text  
@@ -126,9 +131,11 @@ So that LLM follows the direct multimodal path safely.
 
 ### Story MDE-1.3: Drag-and-Drop Batch Extraction + Schema Contract + Observability
 
+Story Artifact: `_bmad-output/implementation-artifacts/mde-1-3-drag-and-drop-batch-extraction-schema-contract-observability.md`
+
 As a **User**,  
-I want to drag files/folders into chat and receive schema-valid structured output in one batch flow,  
-So that multimodal extraction is directly usable by downstream systems.
+I want to drag files/folders into chat and let LLM decide read vs extract, with optional schema-valid batch output,  
+So that multimodal processing is directly usable by downstream systems without forced extraction.
 
 **Acceptance Criteria:**
 
@@ -157,8 +164,9 @@ So that multimodal extraction is directly usable by downstream systems.
 
 **Given** multiple files/pages are processed  
 **When** run completes  
-**Then** `@project/artifacts/extracted-data.json` is written  
-**And** each record contains at least `sourceFile/page/data`.
+**Then** runtime returns structured extraction payload (`runId/generatedAt/records/errors/stats`)  
+**And** each record contains at least `sourceFile/page/data`  
+**And** persistence is optional (`persistArtifact=true`).
 
 **Given** extraction is executed  
 **When** logs are written  

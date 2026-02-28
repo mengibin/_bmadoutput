@@ -133,6 +133,6 @@ development_status:
 
   epic-mde-1: in-progress
   mde-1-1-multimodal-model-configuration-capability-guard: review
-  mde-1-2-first-class-media-extract-binary-fallback-policy: review
-  mde-1-3-drag-and-drop-batch-extraction-schema-contract-observability: backlog
+  mde-1-2-first-class-media-extract-binary-fallback-policy: done
+  mde-1-3-drag-and-drop-batch-extraction-schema-contract-observability: review
   epic-mde-1-retrospective: optional

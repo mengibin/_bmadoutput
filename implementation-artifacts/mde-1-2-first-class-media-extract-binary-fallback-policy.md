@@ -99,6 +99,8 @@ So that LLM follows the direct multimodal path safely.
 |:-----|:-------|
 | `crewagent-runtime/electron/services/fileSystemToolHost.ts` | **MOD**: expose/dispatch first-class `media.extract`; add `mode=read` flow; implement PDF text-first + image fallback; keep `fs.read` binary fallback policy |
 | `crewagent-runtime/electron/services/fileSystemToolHost.test.ts` | **MOD**: add read-mode contract tests, PDF local text-read tests, and PDF compatibility fallback assertions |
+| `crewagent-runtime/electron/services/llmAdapter.ts` | **MOD**: normalize tool-name dot/hyphen compatibility in response decoding to avoid `media-extract` mismatch on OpenAI-compatible providers |
+| `crewagent-runtime/electron/services/llmAdapter.test.ts` | **MOD**: add non-stream + stream regression tests for `media-extract` → `media.extract` decoding |
 | `crewagent-runtime/electron/services/toolHost.ts` | **MOD**: extend media result typing to include read-mode envelope (`content/source/pages`) |
 | `crewagent-runtime/electron/services/multimodalCapabilityService.ts` | **REUSE**: keep guard as pre-flight gate from MDE-1.1 |
 | `crewagent-runtime/electron/services/pythonService.ts` | **REUSE**: use bundled Python locator (`getBundledPythonPath`) for PDF helper execution |
@@ -113,16 +115,21 @@ So that LLM follows the direct multimodal path safely.
   - [x] 2.1 Parse/validate args (`path/mode/instruction/schema/schemaIntent/page/strict/documentTypeHint`)
   - [x] 2.2 Reuse MDE-1.1 capability guard before provider request
   - [x] 2.3 Return normalized success/error envelope with `schemaSource/schemaUsed`
+  - [x] 2.4 Add embedded-Python dependency diagnostics (`PYTHON_MODULE_MISSING` surfaces missing module + pip package hint)
 
 - [x] 3) Enforce binary fallback policy in `fs.read` (AC: 3,5)
   - [x] 3.1 Detect binary/image/PDF input deterministically
   - [x] 3.2 Return structured hint metadata instead of raw/garbled content
   - [x] 3.3 Keep text-read behavior unchanged
 
-- [x] 4) Tests and regression safety net (AC: 1~5)
-  - [x] 4.1 Unit tests for tool exposure and argument validation
-  - [x] 4.2 Integration tests for extraction happy path + unsupported-model path
-  - [x] 4.3 Regression tests for text `fs.read` and non-multimodal tool flows
+- [x] 4) Harden tool-name compatibility across providers (AC: 1,2)
+  - [x] 4.1 Decode tool names by request-time lookup map (not hardcoded prefixes only)
+  - [x] 4.2 Accept known hyphen aliases in dispatch (`media-extract` → `media.extract`) as runtime safety net
+
+- [x] 5) Tests and regression safety net (AC: 1~5)
+  - [x] 5.1 Unit tests for tool exposure and argument validation
+  - [x] 5.2 Integration tests for extraction happy path + unsupported-model path
+  - [x] 5.3 Regression tests for text `fs.read`, tool-name alias decoding, and non-multimodal tool flows
 
 ## Dev Notes
 
@@ -160,6 +167,8 @@ So that LLM follows the direct multimodal path safely.
 - 2026-02-27: Extended implementation with `media.extract mode=read` and PDF text-first/image-fallback strategy.
 - 2026-02-27: Switched PDF helper execution to bundled Python async subprocess, read-mode full-content behavior, and disabled PDF `input_file` payloads.
 - 2026-02-27: Applied follow-up fixes from second code review (abort semantics, read-mode full-page PDF rendering fallback, fs.read FD-safe binary sniff).
+- 2026-02-28: Added OpenAI-compatible tool-name compatibility hardening (`media-extract` decode + dispatch alias safety net) to avoid misrouting away from `media.extract`.
+- 2026-02-28: Improved PDF render failure diagnostics: missing embedded Python module now reports concrete dependency (`module/pipPackage/suggestion`) instead of generic failure.
 
 ## Dev Agent Record
 
@@ -168,6 +177,7 @@ GPT-5 (Codex CLI)
 
 ### Debug Log References
 - `npm -C crewagent-runtime run test -- electron/services/fileSystemToolHost.test.ts`
+- `npm -C crewagent-runtime run test -- electron/services/llmAdapter.test.ts`
 - `npm -C crewagent-runtime run test -- electron/services/multimodalCapabilityService.test.ts electron/services/fileSystemToolHost.test.ts electron/stores/runtimeStore.test.ts`
 - `npm -C crewagent-runtime run build:ci`
 
@@ -185,12 +195,17 @@ GPT-5 (Codex CLI)
 - Embedded Python helper now returns explicit aborted error semantics when run signal is cancelled.
 - `mode=read` PDF image fallback now renders all pages (not first N pages) when local text layer extraction is unavailable.
 - `fs.read` binary detection now guarantees file descriptor close via `try/finally`.
+- Fixed OpenAI-compatible tool-name decoding for dotted tools (e.g. `media.extract`) in both non-stream and stream responses.
+- Added runtime dispatch alias normalization so `media-extract` is safely routed to `media.extract`.
+- PDF render dependency errors now surface actionable diagnostics (`missing module`, `pipPackage`, install suggestion) for faster environment repair.
 
 ### File List
 - `_bmad-output/implementation-artifacts/mde-1-2-first-class-media-extract-binary-fallback-policy.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `crewagent-runtime/electron/services/fileSystemToolHost.ts`
 - `crewagent-runtime/electron/services/fileSystemToolHost.test.ts`
+- `crewagent-runtime/electron/services/llmAdapter.ts`
+- `crewagent-runtime/electron/services/llmAdapter.test.ts`
 - `crewagent-runtime/electron/services/toolHost.ts`
 
 ## Dependencies
@@ -206,3 +221,5 @@ GPT-5 (Codex CLI)
 3. Trigger unsupported-model configuration and verify `LLM_MULTIMODAL_NOT_SUPPORTED`.
 4. Call `fs.read` on binary file and verify hint metadata instead of garbled text.
 5. Re-run text-file `fs.read` scenarios to ensure no regressions.
+6. Verify OpenAI-compatible tool-calls with hyphenated names (`media-extract`) are decoded/routed to `media.extract`.
+7. Simulate missing `pypdfium2` and verify `MEDIA_DECODE_FAILED` details include module + pip installation hint.

@@ -29,6 +29,8 @@
   - `documentTypeHint?`
 - `media.extract` 执行前接入 MDE-1.1 capability guard。
 - `fs.read` 检测二进制/图片/PDF 时返回结构化 fallback 提示。
+- 兼容 OpenAI-compatible 工具名编码差异（`media.extract` ↔ `media-extract`）并避免路由丢失。
+- PDF 渲染缺失依赖时返回可诊断错误（缺失模块名 + pip 包建议），不再仅返回笼统失败消息。
 - 单测覆盖工具注册、guard 分支、binary fallback 分支。
 
 ### Out of Scope (MDE-1.2)
@@ -51,6 +53,10 @@
 ### 决策 3：`media.extract` 结果使用统一 envelope
 - 原因：减少后续批处理与 UI 侧分支复杂度。
 - 结果：成功/失败统一为 `{ ok, ... }` + `{ error: { code, message, details? } }`。
+
+### 决策 4：工具名解码按“本轮工具表映射”而非前缀硬编码
+- 原因：仅按 `fs-/ui-/python-` 前缀硬编码解码会漏掉 `media-extract`，导致 `media.extract` 调用失败并误走其他工具。
+- 结果：在 LLM 适配层用 `encodedToolName -> originalToolName` 映射统一解码；同时在 ToolHost dispatch 层做已知别名兜底。
 
 ---
 
@@ -138,7 +144,8 @@ interface FsReadBinaryHint {
 ### A. Tool Discovery
 1. `getVisibleTools()` 合并系统工具定义。
 2. 注入 `media.extract` 的 function schema。
-3. 返回给 LLM 供直接 function-call。
+3. LLM 请求前对工具名做 provider 兼容编码；响应时按本轮工具映射回写原始名称（含流式/非流式）。
+4. 返回给 LLM 供直接 function-call。
 
 ### B. `media.extract` 执行链路
 1. 参数 JSON 解析与字段校验。
@@ -147,7 +154,8 @@ interface FsReadBinaryHint {
 4. `mode=read` 且为 PDF 时优先尝试本地文本层提取（嵌入式 Python `pypdf`）；成功则直接返回全文。
 5. PDF 本地文本失败时，使用嵌入式 Python `pypdfium2` 将 PDF 页渲染为 PNG，再走多模态。
 6. PDF 多模态请求统一发送 `image_url`，不发送 `input_file`（`application/pdf`）。
-7. 输出标准 envelope（成功/失败统一）。
+7. 若渲染失败且为 `PYTHON_MODULE_MISSING`，返回可诊断错误详情（`module/pipPackage/suggestion`）。
+8. 输出标准 envelope（成功/失败统一）。
 
 ### C. `fs.read` binary fallback
 1. `fs.read` 在读取前进行文件类型判定（扩展名 + 二进制 sniff）。
@@ -165,6 +173,8 @@ interface FsReadBinaryHint {
 |------|----------|------|
 | `crewagent-runtime/electron/services/fileSystemToolHost.ts` | MODIFY | 注册 `media.extract` + dispatch + read/extract 分流 + PDF 文本/渲染降级 + binary fallback |
 | `crewagent-runtime/electron/services/fileSystemToolHost.test.ts` | MODIFY | 覆盖 tool visibility / extract / fallback 分支 |
+| `crewagent-runtime/electron/services/llmAdapter.ts` | MODIFY | 建立工具名编码/解码映射，修复 `media-extract` 回写为 `media.extract`（流式与非流式） |
+| `crewagent-runtime/electron/services/llmAdapter.test.ts` | MODIFY | 新增 `media-extract` 解码回归测试 |
 | `crewagent-runtime/electron/services/toolHost.ts` | MODIFY | 如需扩展 tool result 类型定义 |
 | `crewagent-runtime/electron/services/pythonService.ts` | REUSE | 提供 bundled Python 路径 (`getBundledPythonPath`) |
 | `crewagent-runtime/electron/services/multimodalCapabilityService.ts` | REUSE | 复用 guard，不重复实现 |
@@ -204,6 +214,8 @@ interface FsReadBinaryHint {
 3. unsupported model 返回 `LLM_MULTIMODAL_NOT_SUPPORTED`。
 4. `fs.read` 对图片/PDF 返回 `FS_READ_BINARY_FALLBACK` 提示。
 5. `fs.read` 文本文件路径行为保持不变。
+6. `media-extract`/`fs-read` 等 provider 兼容名字能够正确回写并路由到点号工具名。
+7. PDF 渲染缺失 `pypdfium2` 时，`MEDIA_DECODE_FAILED` details 包含 `module/pipPackage/suggestion`。
 
 ### Integration
 1. 使用支持模型调用 `media.extract`，返回标准 envelope。
