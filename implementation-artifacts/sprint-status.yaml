@@ -130,3 +130,9 @@ development_status:
   10-4-builder-license-generator: done
   10-5-anti-tamper-persistence: done
   epic-10-retrospective: optional
+
+  epic-mde-1: in-progress
+  mde-1-1-multimodal-model-configuration-capability-guard: review
+  mde-1-2-first-class-media-extract-binary-fallback-policy: review
+  mde-1-3-drag-and-drop-batch-extraction-schema-contract-observability: backlog
+  epic-mde-1-retrospective: optional

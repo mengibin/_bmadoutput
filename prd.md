@@ -16,7 +16,7 @@ workflowComplete: true
 project_name: 'CrewAgent'
 user_name: 'Mengbin'
 date: '2025-12-20'
-updated: '2026-02-08'
+updated: '2026-02-27'
 ---
 
 # Product Requirements Document - CrewAgent
@@ -225,6 +225,12 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-LIC-01**: System must enforce a 15-day trial period and support hardware-bound offline license verification.
 *   **FR-LIC-02**: Detailed requirements for the licensing mechanism are defined in the **[Runtime License Verification PRD](prd-runtime-license-verification.md)**.
 
+### Multimodal Document Understanding Capabilities
+*   **FR-MULTI-01**: Runtime must support multimodal extraction from images and fixed-layout documents, with file/folder ingestion from chat panel drag-and-drop, producing schema-constrained structured outputs for downstream workflows.
+*   **FR-MULTI-02**: Runtime must expose `media.extract` directly to LLM as a first-class function-call tool for binary/fixed-layout documents; `fs.read` remains compatibility fallback and must not return garbled text for binary inputs.
+*   **FR-MULTI-03**: Detailed requirements for multimodal extraction and validation are defined in the **[Runtime Multimodal Data Extraction PRD](prd-runtime-multimodal-data-extraction.md)**.
+*   **FR-MULTI-04**: Runtime must provide configurable multimodal LLM settings (provider/baseUrl/model/apiKey/timeout) and must return explicit capability errors when a configured model does not support multimodal input.
+
 ## Non-Functional Requirements
 
 ### Reliability & Availability
@@ -245,6 +251,10 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 - **Builder AI Workbench requirements (separate source of truth):**
   `_bmad-output/prd-builder-AI.md`
+- **Runtime license verification requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-license-verification.md`
+- **Runtime multimodal data extraction requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-multimodal-data-extraction.md`
 - This main PRD intentionally keeps AI details out-of-line; AI Step/Agent/assets requirements are maintained in the linked document so they can be revised independently.
 
 ## Appendix A — Runtime Client Detailed Spec (MVP)

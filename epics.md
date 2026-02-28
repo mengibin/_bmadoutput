@@ -16,6 +16,11 @@ date: '2025-12-21'
 
 This document provides the complete epic and story breakdown for CrewAgent, decomposing the requirements from the PRD and Architecture into implementable stories.
 
+## Linked Epic Documents
+
+- Runtime multimodal data extraction addendum:
+  `_bmad-output/epics-runtime-multimodal-data-extraction.md`
+
 ## Requirements Inventory
 
 ### Functional Requirements
@@ -53,6 +58,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-MNG-02: System must save user-visible artifacts within `ProjectRoot` by default (e.g., `ProjectRoot/artifacts/`), while keeping package cache, run state, and logs in a private RuntimeStore by default.
 - FR-MNG-03: System must maintain an Execution Log recording each tool call and result.
 - FR-MNG-04: Consumers can view the current Workflow State in the Client UI.
+
+**Multimodal Data Extraction Capabilities (Linked Addendum):**
+- FR-MULTI-01: Runtime must support multimodal extraction from images/fixed-layout documents with chat drag-and-drop ingestion.
+- FR-MULTI-02: `media.extract` must be exposed as first-class function-call tool; `fs.read` remains fallback-only for binary inputs.
+- FR-MULTI-03: Detailed multimodal extraction requirements are maintained in linked sub-PRD and epics addendum.
+- FR-MULTI-04: Runtime must provide dedicated multimodal LLM configuration and explicit capability errors.
 
 **Upgrade Requirements (v1.2):**
 - FR-DEF-06: `workflow.graph.json` must support `subworkflowRef` and optional `passContext` on nodes.
@@ -105,6 +116,7 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 | FR-INT-01~04 | Epic 4 | Stdio MCP, stdout/stderr capture, FileSystem MCP, Sandboxed Access |
 | FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
 | FR-MNG-05 | Epic 11 | Hierarchical progress for nested workflows |
+| FR-MULTI-01~04 | Epic MDE-1 (linked addendum) | Runtime multimodal extraction, first-class tool path, model config, schema-driven extraction |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |

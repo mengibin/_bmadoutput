@@ -511,6 +511,7 @@ persona 继承硬约束：
 ### Reference Docs (in `_bmad-output/`)
 
 - Runtime 总览：`_bmad-output/architecture/runtime-architecture.md`
+- 多模态数据提取增量架构：`_bmad-output/architecture/runtime-multimodal-data-extraction-architecture.md`
 - 两种入口细化：`_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
 - Agent menu 路由契约：`_bmad-output/tech-spec/agent-menu-command-contract.md`
 - PromptComposer 组装指南：`_bmad-output/tech-spec/prompt-composer-examples.md`
