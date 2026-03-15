@@ -1424,6 +1424,33 @@ So that I can use MCP servers distributed offline while still running them via m
 
 ---
 
+### Story 5.19: Cross-Platform Terminal Command Execution
+
+As a **Consumer**,
+I want the Agent to execute local terminal commands through built-in Runtime tools,
+So that the LLM can directly run deterministic project commands such as `git`, `npm test`, `ls`, and `bash script.sh` on my machine instead of only reading and writing files.
+
+**Acceptance Criteria:**
+
+**Given** the Agent needs portable local command execution
+**When** it calls `terminal.run`
+**Then** Runtime executes the command via Electron Main using `spawn` with shell disabled by default
+**And** returns bounded `stdout`, `stderr`, `exitCode`, and duration metadata
+**And** the capability works on both macOS and Windows
+
+**Given** the Agent needs shell syntax or shell-specific script invocation
+**When** it calls `shell.exec`
+**Then** Runtime resolves a platform-appropriate shell for macOS or Windows and executes the command
+**And** unsupported shells or unavailable commands return structured errors instead of silent failures
+
+**Given** terminal execution is enabled for the LLM
+**When** commands run, timeout, or are aborted
+**Then** Runtime enforces tool policy, cwd/output/timeout limits, logs execution results, and terminates processes safely per platform
+
+> Detailed story: `_bmad-output/implementation-artifacts/5-19-cross-platform-terminal-command-execution.md`
+
+---
+
 ## Epic 10: Runtime License Verification (Hardware-Bound)
 
 **Goal**: 实现 Runtime 硬件绑定 + 离线激活许可体系，并在 Builder 提供离线发卡工具；为 SaaS 发卡阶段预留扩展。
@@ -1906,3 +1933,195 @@ So that tools are portable and role-scoped.
 - Skill imports support single-file and `SKILL.md` bundle.
 - Tools are exposed only when enabled by the agent’s `skills`.
 - Skill load and tool calls are logged for audit.
+
+---
+
+## Epic 12: Runtime Knowledge Base (Personal + Project, Local-First)
+
+**Goal**: Add governable local knowledge capabilities for personal memory and current-project knowledge, with strict mode isolation, orphan cleanup integration, and migration support.
+
+**Story Slicing Rule (for this Epic):**
+- Each story is a **vertical full-stack slice**.
+- One story must include: Runtime Main (service/store/IPC) + Renderer UI + integration tests/e2e validation.
+- Do not split frontend/backend into separate stories for the same user-visible capability.
+
+### Story 12.1: Personal KB Storage & Candidate Commit
+
+As a **Consumer**,  
+I want personal memory to be stored in a structured local directory and written only after explicit confirmation,  
+So that long-term preferences are reusable without silent memory pollution.
+
+**Acceptance Criteria:**
+
+**Given** Runtime starts and personal knowledge has not been initialized  
+**When** I start a conversation in any mode (`chat/agent/run`)  
+**Then** the system creates personal KB structure under Runtime private state (`USER.md`, `SOUL.md`, `MEMORY.md`, daily `memory/YYYY-MM-DD.md`, `index.json`)
+**And** Settings 仅暴露极简治理入口（清空个人记忆 / 重新整理个人记忆）
+
+**Given** I express explicit memory intent (e.g., "记住这个")  
+**When** the system receives this intent in any mode (`chat/agent/run`) and runs LLM routing  
+**Then** it must request my confirmation before writing  
+**And** unconfirmed candidates are not persisted
+**And** UI provides approve/reject interaction for this candidate in the same conversation flow
+**And** invalid/low-confidence routing cannot directly write files (must clarify or fallback)
+
+**Given** a candidate is approved  
+**When** it is committed  
+**Then** the entry includes `source` and `updatedAt` metadata  
+**And** index is incrementally updated
+**And** `MEMORY.md` 写入必须区分 `Pinned`（固定层）与 `General`（检索层），不能默认全部进入固定层
+**And** commit result is surfaced to UI (success/failure message)
+**And** this write path is available in `chat/agent/run`, while retrieval/injection remains chat-only (Story 12.2)
+
+**Given** index is corrupted  
+**When** rebuild is triggered  
+**Then** index can be rebuilt from Markdown truth sources
+**And** UI shows rebuild progress and result
+
+**Given** user chooses to erase personal memory  
+**When** clear action is confirmed  
+**Then** Runtime clears `MEMORY.md` and `memory/*.md` content and resets index
+**And** UI returns simple success/failure feedback without exposing technical file details
+
+---
+
+### Story 12.2: Chat-Only Personal KB Retrieval & Injection
+
+As a **Consumer**,  
+I want personal memory to augment only chat conversations,  
+So that agent/run workflows are not impacted by personal preferences.
+
+**Acceptance Criteria:**
+
+**Given** current mode is `chat`  
+**When** context is built for an answer  
+**Then** system always injects fixed core memory (`SOUL.md`, `USER.md`)  
+**And** system additionally injects `MEMORY.md#Pinned`（如存在）  
+**And** long-tail memory injection uses query-based top-k retrieval from `MEMORY.md#General`（及 legacy non-pinned）and recent non-empty daily memory (`memory/YYYY-MM-DD.md`)  
+**And** personal injection remains transparent to end users (no chat UI badge/toast)
+
+**Given** current mode is `agent` or `run`  
+**When** context is built  
+**Then** personal KB retrieval/injection is skipped
+**And** no user-facing skip indicator is shown in agent/run UI
+
+**Given** personal knowledge is used or skipped  
+**When** runtime logs events  
+**Then** logs can distinguish `chat hit injection` vs `chat miss` vs `agent/run skipped`
+
+**Given** a memory is marked as long-term and must always take effect  
+**When** memory is persisted from Story 12.1 write path  
+**Then** it should be routed into `SOUL.md` / `USER.md` / `MEMORY.md#Pinned`  
+**And** long-tail reusable memory should be routed into `MEMORY.md#General`  
+**And** daily memory should be treated as long-tail retrieval source, not fixed-injection source
+
+---
+
+### Story 12.3: Project KB Import / Extract / Index / Search
+
+As a **Project Executor**,  
+I want each project to have an isolated local knowledge space that can ingest reference files and support retrieval,  
+So that execution can reuse project knowledge consistently.
+
+**Acceptance Criteria:**
+
+**Given** a new project is created  
+**When** Runtime initializes project data  
+**Then** it creates an empty project knowledge directory at `runtime-store/projects/<projectId>/knowledge/`
+**And** Project Settings UI shows "empty knowledge base" state
+
+**Given** I import project files  
+**When** ingestion runs  
+**Then** supported types include `.pdf`, `.docx`, `.md`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.webp`  
+**And** each source is recorded with file metadata and import timestamp
+**And** UI shows per-file progress and failure reason for failed files
+
+**Given** ingestion completes  
+**When** extraction and indexing run  
+**Then** extracted content is normalized into `extracted/`  
+**And** searchable chunks are written to local `index.json` metadata/catalog
+
+**Given** a project query is executed  
+**When** results are returned  
+**Then** each hit includes at least `sourceFile`, `snippet`, `score`
+**And** results can be displayed in UI with source trace
+
+---
+
+### Story 12.4: Project KB Orphan Cleanup Integration
+
+As a **Consumer**,  
+I want orphan project cleanup to include project knowledge residuals,  
+So that Runtime private storage remains consistent after project folders are removed.
+
+**Acceptance Criteria:**
+
+**Given** a project root no longer exists  
+**When** orphan detection runs  
+**Then** orphan entries include project metadata plus runtime residual stats (conversation count and total size)
+**And** UI explicitly indicates that knowledge residuals are included in cleanup scope
+
+**Given** I execute orphan delete  
+**When** deletion is confirmed  
+**Then** Runtime removes `runtime-store/projects/<projectId>/` completely  
+**And** residual conversations and knowledge files are both removed
+**And** UI refreshes orphan list and shows deletion outcome
+
+**Given** I execute orphan rebind  
+**When** binding succeeds  
+**Then** existing conversations and project knowledge remain available under the re-bound project
+**And** UI reflects the recovered project immediately
+
+---
+
+### Story 12.5: Project KB Export / Import Migration
+
+As a **Consumer**,  
+I want to export and import project knowledge archives,  
+So that reusable knowledge can be migrated across projects or devices.
+
+**Acceptance Criteria:**
+
+**Given** I export project knowledge  
+**When** export completes  
+**Then** archive contains `source/`, `extracted/`, `notes/`, `manifest.json`, and integrity checks
+**And** UI provides export path/result feedback
+
+**Given** I import a knowledge archive into target project  
+**When** archive passes validation  
+**Then** data is restored into target knowledge directory  
+**And** target index is rebuilt
+**And** UI shows import summary (imported files, skipped files, rebuild result)
+
+**Given** import fails at any stage  
+**When** rollback executes  
+**Then** target project knowledge returns to pre-import state  
+**And** failure is logged with reason
+**And** UI clearly indicates rollback completed
+
+**Given** import succeeds  
+**When** I edit imported content later  
+**Then** source and target projects evolve independently (copy semantics)
+
+---
+
+### Story 12.6: Knowledge Management UI & Index Rebuild
+
+As a **Consumer**,  
+I want a basic management UI for personal/project knowledge operations,  
+So that I can inspect sources, trigger maintenance, and recover from index issues.
+
+**Acceptance Criteria:**
+
+**Given** I open Runtime settings/project data views  
+**When** knowledge module is available  
+**Then** I can see personal/project knowledge status and storage summary
+
+**Given** I need maintenance  
+**When** I trigger rebuild index  
+**Then** system rebuilds index from local truth sources and reports result
+
+**Given** I need governance visibility  
+**When** I inspect operation records  
+**Then** I can review key events (import, commit, orphan cleanup, migration)
+**And** I can jump from operation records to related source/knowledge entries

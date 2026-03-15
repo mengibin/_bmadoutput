@@ -508,9 +508,116 @@ persona 继承硬约束：
 4. LLM 通过 ToolCalls 写 `@project/...` 产物，并用 `fs.apply_patch` 更新 `@state/workflow.md` frontmatter
 5. Runtime 校验：frontmatter 可解析 + schema 合法 + `currentNodeId` 跳转合法（必须是图允许后继）
 
+### Runtime Knowledge Base Delta (2026-03)
+
+> 本节是对 Runtime 现有架构的增量约束，覆盖“个人知识库 + 当前项目知识库（本地优先）”的设计边界。  
+> 目标：在不破坏既有对话/工程执行链路的前提下，引入可治理、可检索、可迁移、可清理的知识层。
+
+#### 1) Scope & Mode Boundaries
+
+- **Personal Knowledge Base**
+  - 仅 `chat` 模式启用（检索 + 注入）
+  - `agent` / `run` 模式强制禁用（不读取、不检索、不注入）
+- **Project Knowledge Base**
+  - 对当前项目可检索
+  - 与项目目录隔离，存放在 Runtime 私有目录
+- **Enterprise MCP-RAG**
+  - 不在本次增量范围（后续通过 MCP 接入）
+
+#### 2) Component Additions (Runtime Main)
+
+| Component | Responsibility |
+|:---|:---|
+| `PersonalKBService` | 个人知识候选、确认写入、检索、重建索引（chat-only） |
+| `ProjectKBService` | 项目知识导入、提取、切片、检索、笔记沉淀 |
+| `KnowledgeIndex` | 本地索引抽象（Epic 12 MVP 统一使用 JSON 元数据 / chunk catalog；不以 SQLite 为前提） |
+| `KnowledgeMigrationService` | 项目知识导出/导入、校验、回滚 |
+| `KnowledgePolicyGuard` | 模式隔离与注入限额控制（chat/agent/run） |
+
+说明：MVP 阶段可先以内聚的内部 service 实现，不要求立即暴露完整工具集。
+
+#### 3) Storage Boundaries & Layout
+
+**Personal KB（Runtime 私有）**
+
+```text
+@state/kb/personal/
+  USER.md
+  SOUL.md
+  MEMORY.md
+  memory/YYYY-MM-DD.md
+  index.json
+  manifest.json
+```
+
+**Project KB（Runtime 私有，按 projectId 隔离）**
+
+```text
+<runtime-userData>/runtime-store/projects/<projectId>/knowledge/
+  source/
+  extracted/
+  notes/
+  snapshots/
+  backups/
+  index.json
+  manifest.json
+  ops-log.ndjson
+```
+
+关键约束：
+
+- 项目知识 **不** 存放在 `ProjectRoot`；用户默认无直接编辑入口。
+- `manifest.json` 记录 `sha256/importedAt/lastIndexedAt`，用于可追溯与防篡改提示。
+
+#### 4) Retrieval Injection Flow (Context Builder Integration)
+
+在现有 Context Builder 前追加知识检索阶段：
+
+1. `mode=chat` 时：加载 personal 固定层（`SOUL/USER/Pinned`）+ query 检索命中片段（`General` + recent non-empty daily）；
+2. `mode=agent/run` 时：跳过 personal 检索逻辑；
+3. project 检索按当前 `projectId` 作用域执行，禁止跨项目默认读取；
+4. 注入策略采用“命中片段优先 + token 上限”，禁止全量注入。
+
+#### 5) Orphan Cleanup Integration (Reuse Existing Story 8.4 Chain)
+
+复用既有 orphan 数据管理链路：
+
+- detection：`detectOrphanProjects()`
+- delete：`deleteOrphanData(projectId)`
+- rebind：`rebindProject(projectId, newRoot)`
+- ignore：`ignoreOrphanProject(projectId)`
+
+新增约束：当执行 orphan 删除时，删除范围覆盖 `runtime-store/projects/<projectId>/` 全目录，包含 conversations + knowledge 残留。
+
+#### 6) Project KB Migration Semantics
+
+迁移分为导出与导入：
+
+- **Export**：打包 `source/extracted/notes/manifest` + 迁移元数据 + 校验信息
+- **Import**：校验完整性后写入目标项目 knowledge 目录，完成后重建索引
+
+失败语义：
+
+- 导入采用 staged 目录 + 原子替换；
+- 任一步骤失败必须回滚到导入前状态；
+- 回滚与失败原因写入 `ops-log.ndjson`。
+
+#### 7) Reliability / Security / Observability Constraints
+
+- **Reliability**
+  - 索引层可随时从 Markdown/提取层重建
+  - 单文件提取失败不阻断批量导入
+- **Security**
+  - 访问遵循 mount 边界与 projectId 隔离
+  - personal 数据默认不外发
+- **Observability**
+  - 记录知识导入、检索命中、候选确认、孤儿清理、迁移导入导出事件
+  - 可区分 `chat 命中注入` 与 `agent/run 跳过`
+
 ### Reference Docs (in `_bmad-output/`)
 
 - Runtime 总览：`_bmad-output/architecture/runtime-architecture.md`
+- Runtime 知识库增量需求：`_bmad-output/prd-runtime-personal-knowledge-base.md`、`_bmad-output/prd-runtime-project-knowledge-base.md`
 - 多模态数据提取增量架构：`_bmad-output/architecture/runtime-multimodal-data-extraction-architecture.md`
 - 两种入口细化：`_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
 - Agent menu 路由契约：`_bmad-output/tech-spec/agent-menu-command-contract.md`

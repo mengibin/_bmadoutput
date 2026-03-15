@@ -131,6 +131,15 @@ development_status:
   10-5-anti-tamper-persistence: done
   epic-10-retrospective: optional
 
+  epic-12: in-progress
+  12-1-personal-kb-storage-and-candidate-commit: done
+  12-2-chat-only-personal-kb-retrieval-and-injection: done
+  12-3-project-kb-import-extract-index-search: review
+  12-4-project-kb-orphan-cleanup-integration: review
+  12-5-project-kb-export-import-migration: review
+  12-6-kb-management-ui-and-index-rebuild: in-progress
+  epic-12-retrospective: optional
+
   epic-mde-1: in-progress
   mde-1-1-multimodal-model-configuration-capability-guard: review
   mde-1-2-first-class-media-extract-binary-fallback-policy: done

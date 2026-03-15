@@ -255,6 +255,10 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
   `_bmad-output/prd-runtime-license-verification.md`
 - **Runtime multimodal data extraction requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-multimodal-data-extraction.md`
+- **Runtime personal knowledge base requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-personal-knowledge-base.md`
+- **Runtime project knowledge base requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-project-knowledge-base.md`
 - This main PRD intentionally keeps AI details out-of-line; AI Step/Agent/assets requirements are maintained in the linked document so they can be revised independently.
 
 ## Appendix A — Runtime Client Detailed Spec (MVP)
