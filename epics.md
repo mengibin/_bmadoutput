@@ -47,11 +47,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-RUN-05: Runtime must support Context Injection (passing artifacts from previous steps).
 - FR-RUN-06: Runtime must support Pause/Resume from last saved Frontmatter state.
 
-**Integration Capabilities (MCP Drivers):**
+**Integration Capabilities (Tool / Command Execution):**
 - FR-INT-01: Runtime must support Stdio MCP Driver for spawning local CLI tools.
 - FR-INT-02: Runtime must capture stdout and stderr from spawned tools.
 - FR-INT-03: Runtime must support FileSystem MCP Driver for reading/writing files.
 - FR-INT-04: Runtime must enforce Sandboxed File Access (scoped to Project Folder).
+- FR-INT-05: Runtime must expose controlled builtin terminal command tools so the LLM can directly execute local project commands on macOS and Windows.
 
 **Management Capabilities (Project & State):**
 - FR-MNG-01: System must support selecting/opening a user **Project Folder** (`ProjectRoot`), and create a dedicated **Run Folder** (private RuntimeStore) for each new execution.
@@ -114,6 +115,7 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 | FR-RUN-01~06 | Epic 4 | Package Load, Frontmatter State, Document-as-State, Agent Injection, Context Injection, Pause/Resume |
 | FR-RUN-07~08 | Epic 11 | Subworkflow call/return + per-workflow state |
 | FR-INT-01~04 | Epic 4 | Stdio MCP, stdout/stderr capture, FileSystem MCP, Sandboxed Access |
+| FR-INT-05 | Epic 5 | Builtin terminal command execution tools with policy gating and macOS/Windows parity |
 | FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
 | FR-MNG-05 | Epic 11 | Hierarchical progress for nested workflows |
 | FR-MULTI-01~04 | Epic MDE-1 (linked addendum) | Runtime multimodal extraction, first-class tool path, model config, schema-driven extraction |
@@ -173,15 +175,16 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 ---
 
 ### Epic 5: Observability, Settings & Recovery
-**Goal**: Consumers can view execution progress, manage settings/drivers, and recover from failures.
-**FRs covered**: FR-MNG-01~04, NFR-REL-01~02, NFR-SEC-01, NFR-USAB-01~02
+**Goal**: Consumers can view execution progress, manage settings and execution capabilities, and recover from failures.
+**FRs covered**: FR-MNG-01~04, FR-INT-05, NFR-REL-01~02, NFR-SEC-01, NFR-USAB-01~02
 **Deliverables**:
 - ProjectRoot 最近列表 + Run 列表/Resume
 - Execution log UI
 - Workflow state visualization
 - Crash recovery (resume from Frontmatter)
 - Runtime settings (LLM provider/model, API keys)
-- Tool policy / MCP driver management (enable/disable)
+- Tool policy / MCP driver / terminal execution management (enable/disable)
+- Builtin terminal command tools for LLM-driven local execution with summary-only ChatPanel presentation
 
 ---
 
@@ -1432,20 +1435,23 @@ So that the LLM can directly run deterministic project commands such as `git`, `
 
 **Acceptance Criteria:**
 
-**Given** the Agent needs portable local command execution
+**Given** the Agent needs local command execution that fits executable + args
 **When** it calls `terminal.run`
 **Then** Runtime executes the command via Electron Main using `spawn` with shell disabled by default
-**And** returns bounded `stdout`, `stderr`, `exitCode`, and duration metadata
-**And** the capability works on both macOS and Windows
+**And** returns bounded `stdout`, `stderr`, `exitCode`, duration metadata, and truncation flags to the LLM
+**And** commands such as `git status`, `npm test`, and `bash script.sh` are expected to use this path when possible
 
-**Given** the Agent needs shell syntax or shell-specific script invocation
+**Given** the Agent needs shell parsing or shell-only syntax
 **When** it calls `shell.exec`
 **Then** Runtime resolves a platform-appropriate shell for macOS or Windows and executes the command
 **And** unsupported shells or unavailable commands return structured errors instead of silent failures
+**And** the prompt/tool descriptions explicitly teach the LLM to prefer `terminal.run` and reserve `shell.exec` for shell semantics
 
 **Given** terminal execution is enabled for the LLM
 **When** commands run, timeout, or are aborted
-**Then** Runtime enforces tool policy, cwd/output/timeout limits, logs execution results, and terminates processes safely per platform
+**Then** Runtime enforces an explicit terminal tool policy independent from `fs.*` and MCP
+**And** captures bounded results for the LLM while ChatPanel only shows a concise invocation summary
+**And** implements the capability as a first-class supported feature on both macOS and Windows with platform-specific execution and termination handling
 
 > Detailed story: `_bmad-output/implementation-artifacts/5-19-cross-platform-terminal-command-execution.md`
 

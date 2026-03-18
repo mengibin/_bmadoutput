@@ -111,6 +111,7 @@ development_status:
   5-15-python-script-execution: done  # NEW: Bundled Python execution
   5-16-python-third-party-libraries: done  # Auto-install on ModuleNotFoundError
   5-17-file-drag-to-chat-attachment: review  # Implementation complete, pending verification
+  5-19-cross-platform-terminal-command-execution: review
   epic-5-retrospective: optional
 
   epic-7: in-progress
