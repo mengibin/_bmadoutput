@@ -617,6 +617,8 @@ persona 继承硬约束：
 ### Reference Docs (in `_bmad-output/`)
 
 - Runtime 总览：`_bmad-output/architecture/runtime-architecture.md`
+- Runtime Claude Code Skills 增量架构：`_bmad-output/architecture/runtime-claude-code-skills-architecture.md`
+- Runtime Claude Code Skills 增量需求：`_bmad-output/prd-runtime-claude-code-skills.md`
 - Runtime 知识库增量需求：`_bmad-output/prd-runtime-personal-knowledge-base.md`、`_bmad-output/prd-runtime-project-knowledge-base.md`
 - 多模态数据提取增量架构：`_bmad-output/architecture/runtime-multimodal-data-extraction-architecture.md`
 - 两种入口细化：`_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
@@ -690,6 +692,8 @@ persona 继承硬约束：
 
 ## Appendix: v1.2 Upgrade Implications (Subworkflow + Portable Skills)
 
+> Boundary note: 本附录保留 package spec v1.2、subworkflow 与 package-bound skills 的影响面。Runtime-first Claude Code skill consumption compatibility 另见 `_bmad-output/architecture/runtime-claude-code-skills-architecture.md`。
+
 ### Subworkflow (Runtime)
 
 - 新增 `@state/run.md` 作为 run 级状态，保存 `activeWorkflowId` 与 `callStack`
@@ -704,3 +708,4 @@ persona 继承硬约束：
 
 - `agents.json` 新增 `skills`（capabilities/imports）
 - Runtime 需支持脚本导入、工具注册与权限隔离
+- Runtime-first Claude Code skill consumption（skill registry、LLM 自主激活、supporting file 按需加载）单独归入 Epic 13

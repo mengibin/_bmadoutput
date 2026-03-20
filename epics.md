@@ -74,6 +74,16 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-MNG-05: Runtime must expose hierarchical progress for nested workflows.
 - FR-SEC-03: Tools must be visible only when enabled by the agent’s `skills`.
 
+**Runtime Claude Code Skill Capabilities:**
+- FR-SKL-01: Runtime must discover and parse Claude Code style `SKILL.md` skills from runtime-accessible sources provided by the host.
+- FR-SKL-02: Runtime must inject a skill registry into the initial system prompt without preloading full skill bodies.
+- FR-SKL-03: Runtime must allow the main LLM to trigger skill activation during the conversation loop.
+- FR-SKL-04: Runtime must support on-demand loading of supporting files scoped to the active skill.
+- FR-SKL-05: Runtime must narrow visible tools based on Claude Code `allowed-tools` without granting new privileges.
+- FR-SKL-06: Runtime must let active skills work through existing `fs`, `terminal`, and `python` bridges plus first-class `node.run` / `npm.install`, including Python and Node module execution with npm auto-install.
+- FR-SKL-07: Runtime must provide an adapter path so package v1.2 `skills.imports` can reuse the same runtime skill mechanism.
+- FR-SKL-08: Runtime must log skill discovery, activation, resource loading, and error diagnostics for audit.
+
 ### Non-Functional Requirements
 
 **Reliability & Availability:**
@@ -87,6 +97,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 **Usability (Offline Mode):**
 - NFR-USAB-01: Runtime Client fully operational offline after initial license activation.
 - NFR-USAB-02: Client must support local LLM endpoints (Ollama, LM Studio).
+
+**Runtime Claude Code Skills:**
+- NFR-SKL-01: Skill context injection must remain budget-aware and avoid full skill preloading by default.
+- NFR-SKL-02: Skill access boundaries and tool narrowing rules must be deterministic and host-controlled.
+- NFR-SKL-03: Skills must not expand privileges beyond current runtime and agent tool policy.
+- NFR-SKL-04: Invalid skills or missing dependencies must fail gracefully with structured errors.
 
 ### Additional Requirements (from Architecture)
 
@@ -119,10 +135,12 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 | FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
 | FR-MNG-05 | Epic 11 | Hierarchical progress for nested workflows |
 | FR-MULTI-01~04 | Epic MDE-1 (linked addendum) | Runtime multimodal extraction, first-class tool path, model config, schema-driven extraction |
+| FR-SKL-01~08 | Epic 13 | Runtime-first Claude Code skill discovery, registry injection, activation, and execution bridge |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |
 | FR-SEC-03 | Epic 11 | Skill-based tool visibility |
+| NFR-SKL-01~04 | Epic 13 | Context-efficient skill consumption with deterministic boundaries and graceful failure |
 | NFR-USAB-01~02 | Epic 4, Epic 5 | Offline Mode, Local LLM Support |
 
 ## Epic List
@@ -197,6 +215,21 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - Subworkflow call/return + callStack recovery
 - Hierarchical progress reporting & UI
 - Skill import/registration + role-based tool visibility
+
+---
+
+### Epic 13: Runtime Claude Code Skills (Runtime-First, LLM-Activated)
+**Goal**: Let Runtime consume Claude Code style skills from runtime-accessible sources and let the main LLM discover, activate, and use them during chat/agent/run loops.
+**FRs covered**: FR-SKL-01~08, NFR-SKL-01~04
+**Deliverables**:
+- Runtime-first skill attachment and discovery
+- Skill registry prompt injection
+- LLM-driven activation + context mutation
+- Supporting file loading + tool narrowing
+- Python/node/terminal skill execution bridge + npm dependency install
+- Package v1.2 adapter hook
+- Strict BMAD execution order: `13.1 -> 13.7 -> 13.2 -> 13.3 -> 13.4 -> 13.6 -> 13.5`
+- Current BMAD state: `13.1 done`; `13.7 done`; `13.2 done`; `13.3 done`; `13.4 done`; `13.6 done`; `13.5 blocked`
 
 ---
 
@@ -2131,3 +2164,180 @@ So that I can inspect sources, trigger maintenance, and recover from index issue
 **When** I inspect operation records  
 **Then** I can review key events (import, commit, orphan cleanup, migration)
 **And** I can jump from operation records to related source/knowledge entries
+
+---
+
+## Epic 13: Runtime Claude Code Skills (Runtime-First, LLM-Activated)
+
+**Goal**: Let Runtime consume Claude Code style skills from runtime-accessible sources and let the main LLM discover, activate, and use them during chat/agent/run loops.
+
+**Story Slicing Rule (for this Epic):**
+- Each story is a **runtime vertical slice**.
+- One story may span Main Process services, tool host, context builder, and integration tests.
+- Do not create standalone “write docs” stories; every story must describe user-visible or runtime-visible behavior.
+
+**Strict BMAD Execution Rule (for this Epic):**
+- Stories execute serially, one at a time, in this order: `13.1 -> 13.7 -> 13.2 -> 13.3 -> 13.4 -> 13.6 -> 13.5`.
+- Only one Epic 13 story may be `ready-for-dev` or `in-progress` at a time.
+- Downstream stories remain `blocked` until all listed dependencies are `done`.
+- Story 13.5 additionally waits for Epic 11.1 package `skills.imports`.
+
+**Current Execution Status:**
+
+| Order | Story | Status | Blocking Dependencies |
+|:---|:---|:---|:---|
+| 1 | 13.1 Runtime Skill Discovery & Registry Injection | `done` | None |
+| 2 | 13.7 Effective Skill Source Composition & User-Global Scope | `done` | 13.1 |
+| 3 | 13.2 LLM-Driven Skill Activation & Context Mutation | `done` | 13.1, 13.7 |
+| 4 | 13.3 Supporting Files Loading & Tool Narrowing | `done` | 13.1, 13.7, 13.2 |
+| 5 | 13.4 Python/Node/Terminal Skill Execution Bridge | `done` | 13.1, 13.7, 13.2, 13.3, 5.19 |
+| 6 | 13.6 Effective Agent / Run Mode / Audit Alignment | `done` | 13.1, 13.7, 13.2, 13.3, 13.4 |
+| 7 | 13.5 Package v1.2 Skill Import Adapter | `blocked` | 13.1, 13.7, 13.2, 13.3, 13.4, 13.6, Epic 11.1 |
+
+### Story 13.1: Runtime Skill Discovery & Registry Injection
+
+As a **Runtime User**,  
+I want Runtime to discover attached Claude Code skills and expose a compact registry to the LLM,  
+So that the model knows which skills are available without preloading all skill content.
+
+**Acceptance Criteria:**
+
+**Given** the host attaches one or more runtime-accessible skill sources  
+**When** Runtime initializes the session context  
+**Then** it discovers valid Claude Code style `SKILL.md` skills
+**And** parses each skill into a normalized internal model with `skillId`, `description`, root path, and supporting file index
+**And** excludes invalid or out-of-scope skill sources with structured diagnostics
+
+**Given** valid skills are discovered  
+**When** the initial system prompt is composed  
+**Then** Runtime injects a skill registry block listing available skills and one-line descriptions
+**And** it does not inject the full skill body at this stage
+**And** the registry is filtered by the current effective agent scope
+
+### Story 13.7: Effective Skill Source Composition & User-Global Scope
+
+As a **Runtime User**,  
+I want Runtime to resolve `user-global` and `session` skill sources into one effective set for each turn,  
+So that my default reusable skills are available across projects while session inputs can extend or override them predictably.
+
+**Acceptance Criteria:**
+
+**Given** Runtime has a configured user-global skills directory under its private state  
+**When** chat, agent, or run mode initializes session context  
+**Then** Runtime auto-discovers valid Claude Code skills from that directory  
+**And** exposes them to all projects by default without requiring per-session attachment  
+**And** excludes invalid global skills with structured diagnostics rather than failing the session
+
+**Given** user-global and session-attached skill sources are both present  
+**When** Runtime builds the effective skill source list  
+**Then** it composes them with deterministic precedence `session > user-global`  
+**And** deduplicates identical resolved sources  
+**And** emits structured diagnostics for `skillId` or source collisions instead of silently changing precedence
+
+**Given** downstream discovery and registry injection already use `attachedSkills`  
+**When** the effective skill source list is produced  
+**Then** Runtime reuses the Story 13.1 discovery and registry pipeline without introducing a parallel skill loading path  
+**And** all three modes consume the same source-composition service
+**And** Runtime leaves a package-layer extension hook for Story 13.5 without implementing package imports in this story
+
+**Given** Runtime has a user-global skills root under private state  
+**When** the user opens Runtime settings  
+**Then** the UI shows the imported skill entries  
+**And** the user can import and remove user-global skills without manually editing the filesystem
+
+### Story 13.2: LLM-Driven Skill Activation & Context Mutation
+
+As a **Runtime User**,  
+I want the main model to decide when to activate a skill during the conversation,  
+So that skill usage follows model judgment rather than a separate routing step.
+
+**Acceptance Criteria:**
+
+**Given** the model sees a skill registry in context  
+**When** it decides a skill should be used  
+**Then** it can call a dedicated internal activation tool for an allowed skill
+**And** Runtime rejects activation for skills with `disable-model-invocation=true`
+
+**Given** skill activation succeeds  
+**When** the tool loop continues to the next model turn  
+**Then** Runtime injects the activated skill instructions as new system context
+**And** recomputes the visible tools for the next turn
+**And** keeps the activation state only within the current loop, without persisting it to conversation or workflow state
+
+### Story 13.3: Supporting Files Loading & Tool Narrowing
+
+As a **Runtime User**,  
+I want the model to load supporting files only when needed and to obey the skill’s allowed tool scope,  
+So that context remains efficient and the skill cannot widen permissions.
+
+**Acceptance Criteria:**
+
+**Given** a skill is active and declares supporting files  
+**When** the model requests a supporting file  
+**Then** Runtime allows loading only files explicitly linked by the skill and only within that skill’s root directory
+**And** returns structured errors for undeclared or out-of-scope paths
+
+**Given** a skill defines `allowed-tools`  
+**When** the skill becomes active  
+**Then** Runtime narrows the visible tool set based on a deterministic mapping to existing runtime tools
+**And** never grants tools that are not already allowed by runtime and agent policy
+
+### Story 13.4: Python/Node/Terminal Skill Execution Bridge
+
+As a **Runtime User**,  
+I want activated skills to work through the existing execution tools,  
+So that supporting scripts can actually run inside Runtime.
+
+**Acceptance Criteria:**
+
+**Given** a skill references Python or JavaScript supporting scripts or module-style entrypoints  
+**When** the model calls language execution through the skill flow  
+**Then** Runtime supports `python.run` with `code`, `file`, or `module`
+**And** Runtime supports `node.run` with `code`, `file`, or `module`
+**And** skill-relative file paths can resolve through a stable skill alias
+
+**Given** a JavaScript skill depends on npm packages  
+**When** execution encounters missing npm dependencies  
+**Then** Runtime can install them through `npm.install` in an isolated skill workspace
+**And** if auto-install is enabled it retries the failed `node.run` once after installation
+
+**Given** a skill relies on Python, Node, or shell execution  
+**When** execution is attempted  
+**Then** Runtime reuses current Python dependency handling, bundled Node.js/npm, and existing terminal bridge
+**And** returns structured errors for missing system dependencies instead of silent failure
+
+### Story 13.5: Package v1.2 Skill Import Adapter
+
+As a **Package Author**,  
+I want future package-bound skill imports to reuse the runtime-first skill mechanism,  
+So that package support does not fork the activation and execution architecture.
+
+**Acceptance Criteria:**
+
+**Given** Epic 11.1 introduces package `skills.imports`  
+**When** Runtime loads a package-bound skill declaration  
+**Then** it adapts the package declaration into the same internal skill source structure used by runtime-first attached skills
+**And** it feeds the package layer into the same effective skill source composition used by user-global and session skills
+**And** it does not duplicate skill parsing, activation, resource loading, or tool narrowing logic
+
+**Given** the same skill can be attached runtime-first or declared in package v1.2  
+**When** Runtime resolves it  
+**Then** both paths converge on the same effective skill source composition, skill registry, and activation pipeline
+
+### Story 13.6: Effective Agent / Run Mode / Audit Alignment
+
+As a **Runtime Developer**,  
+I want skill visibility and audit behavior to align with effective agent selection and run mode execution,  
+So that skill behavior remains predictable across chat, agent, and run loops.
+
+**Acceptance Criteria:**
+
+**Given** Runtime is operating in chat, agent, or run mode  
+**When** skills are resolved for the current turn  
+**Then** visible skills are scoped to the current effective agent
+**And** skill activation does not leak across agent boundaries
+
+**Given** a skill is discovered, activated, loads a resource, or fails  
+**When** Runtime records diagnostics  
+**Then** it writes structured audit events for discovery, activation, resource loading, and errors
+**And** each event includes enough identifiers to trace package, workflow, run, agent, and skill context

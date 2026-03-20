@@ -278,6 +278,7 @@ LLM 工具只允许看到三类根：
 - **Strict State Mode**（可选）：提供 `runtime.complete_node()` 来收敛状态更新，减少 LLM 直接 patch frontmatter 的错误
 - **MCP**：ToolRegistry = Builtin + MCP（统一暴露 tools 给 LLM）
 - **Subworkflow**（v1.2+）：利用 `callStack` 执行嵌套流程（见 runtime-spec.md 的建议）
+- **Runtime-first Claude Code Skills**：在 Runtime 可访问路径下挂载 skill 目录，向 LLM 注入 skill registry，并通过自主激活 + supporting file 按需加载消费 skill（详见 `_bmad-output/architecture/runtime-claude-code-skills-architecture.md`）
 - **审批/权限**：对 `@project` 的写入可引入策略（例如只允许写 artifacts/ 与特定目录）
 - **索引/检索**：对 Project 与 artifacts 建立索引，提供 `search` / `semantic_retrieve` 工具
 
@@ -300,3 +301,4 @@ LLM 工具只允许看到三类根：
 
 - `agents.json` 支持 `skills`（capabilities/imports）
 - Runtime 解析脚本并转译为工具 schema，按角色可见性暴露
+- 本节仅覆盖 package-bound v1.2 skills；Runtime-first Claude Code skill consumption 见独立增量架构文档

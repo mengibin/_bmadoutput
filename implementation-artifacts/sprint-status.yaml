@@ -19,6 +19,7 @@
 #   - backlog: Story only exists in epic file
 #   - ready-for-design: Story file created, ready for design
 #   - ready-for-dev: Design complete, ready for development
+#   - blocked: Story/design are drafted but execution cannot begin until dependencies complete
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
@@ -31,6 +32,7 @@
 # ===============
 # - Epic transitions to 'in-progress' automatically when first story is created
 # - Stories can be worked in parallel if team capacity allows
+# - For strict-serial epics, use `blocked` when downstream stories are fully drafted but must wait on predecessor completion
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
@@ -140,6 +142,16 @@ development_status:
   12-5-project-kb-export-import-migration: review
   12-6-kb-management-ui-and-index-rebuild: in-progress
   epic-12-retrospective: optional
+
+  epic-13: in-progress
+  13-1-runtime-skill-discovery-and-registry-injection: done
+  13-7-effective-skill-source-composition-and-user-global-scope: done
+  13-2-llm-driven-skill-activation-and-context-mutation: done
+  13-3-supporting-files-loading-and-tool-narrowing: done
+  13-4-python-node-terminal-skill-execution-bridge: done
+  13-6-effective-agent-run-mode-and-audit-alignment: done
+  13-5-package-v1-2-skill-import-adapter: blocked
+  epic-13-retrospective: optional
 
   epic-mde-1: in-progress
   mde-1-1-multimodal-model-configuration-capability-guard: review

@@ -255,6 +255,8 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
   `_bmad-output/prd-runtime-license-verification.md`
 - **Runtime multimodal data extraction requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-multimodal-data-extraction.md`
+- **Runtime Claude Code Skills requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-claude-code-skills.md`
 - **Runtime personal knowledge base requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-personal-knowledge-base.md`
 - **Runtime project knowledge base requirements (linked sub-PRD):**
@@ -271,10 +273,12 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 ## Appendix B — v1.2 Upgrade Requirements (Subworkflow + Portable Skills)
 
+> Boundary note: 本附录仅覆盖 spec v1.2 与 package-bound skills 的升级要求。Runtime-first Claude Code skill consumption、LLM 自主激活与 supporting files 运行机制，单独定义于 `_bmad-output/prd-runtime-claude-code-skills.md`，并在 Epic 13 中落地。
+
 ### Definition & Package Format
 
 *   **FR-DEF-06**: `workflow.graph.json` must support `subworkflowRef` and optional `passContext` on nodes.
-*   **FR-DEF-07**: `agents.json` must support a `skills` object for capabilities and script imports.
+*   **FR-DEF-07**: `agents.json` must support a `skills` object for package-bound capabilities and script imports.
 
 ### Runtime Execution
 
@@ -287,7 +291,7 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 ### Security & Control
 
-*   **FR-SEC-03**: Tools must be visible only when enabled by the agent’s `skills` (role-based control).
+*   **FR-SEC-03**: Package-bound tools must be visible only when enabled by the agent’s `skills` (role-based control).
 
 ### A.1 `.bmad` 包（v1.1）约定
 
