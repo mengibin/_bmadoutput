@@ -20,6 +20,8 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 
 - Runtime multimodal data extraction addendum:
   `_bmad-output/epics-runtime-multimodal-data-extraction.md`
+- Runtime Chat Plan Mode addendum:
+  `_bmad-output/epics-runtime-chat-plan-mode.md`
 
 ## Requirements Inventory
 
@@ -66,6 +68,22 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-MULTI-03: Detailed multimodal extraction requirements are maintained in linked sub-PRD and epics addendum.
 - FR-MULTI-04: Runtime must provide dedicated multimodal LLM configuration and explicit capability errors.
 
+**Chat Plan Collaboration Capabilities (Linked Addendum):**
+- FR-PLAN-01: Runtime must support a `Plan` submode inside existing Chat conversations.
+- FR-PLAN-02: Runtime must initialize project-scoped Plan artifacts under `@state/projects/<projectId>/plans/<conversationId>/`.
+- FR-PLAN-03: Runtime must allow users to open and edit `plan.md` from the Chat workspace using top tabs.
+- FR-PLAN-04: Runtime must support structured plan remarks independent from main markdown.
+- FR-PLAN-05: Runtime must inject current plan and remarks into chat context for iterative refinement.
+- FR-PLAN-06: Runtime must allow users to approve and execute a plan from Chat.
+- FR-PLAN-07: Runtime must provide independent plan progress visualization and recovery.
+- FR-PLAN-08: Detailed Chat Plan Mode requirements are maintained in linked sub-PRD and epics addendum.
+- FR-PLAN-09: Plan lifecycle state changes must be triggered by explicit UI actions, not chat command envelopes.
+- FR-PLAN-10: When execution pauses for user decision, user input should default to continuing the current waiting task.
+- FR-PLAN-11: When Plan mode is enabled, `plan.md` must start as an empty draft rather than a prefilled template.
+- FR-PLAN-12: Chat input semantics in Plan mode must vary by state: drafting/reviewing input edits the plan, while waiting-user input continues the current task.
+- FR-PLAN-13: After a plan completes, the next chat submission must start a new version instead of overwriting the completed plan.
+- FR-PLAN-14: During `waiting_user`, clicking `Regenerate Plan` must reinterpret the current chat draft as a plan refinement request.
+
 **Upgrade Requirements (v1.2):**
 - FR-DEF-06: `workflow.graph.json` must support `subworkflowRef` and optional `passContext` on nodes.
 - FR-DEF-07: `agents.json` must support `skills` (capabilities + script imports).
@@ -104,6 +122,14 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - NFR-SKL-03: Skills must not expand privileges beyond current runtime and agent tool policy.
 - NFR-SKL-04: Invalid skills or missing dependencies must fail gracefully with structured errors.
 
+**Runtime Chat Plan Mode:**
+- NFR-PLAN-01: Plan artifacts must use project-first isolation for cleanup.
+- NFR-PLAN-02: Plan artifacts and progress must be traceable by `projectId + conversationId`.
+- NFR-PLAN-03: Plan mode must restore plan state and progress after restart.
+- NFR-PLAN-04: Plan mode stories must be front-end/back-end integrated and independently testable.
+- NFR-PLAN-05: Plan mode must not break existing `workflow / agent / chat` behavior.
+- NFR-PLAN-06: Plan mode context injection must remain bounded and prompt-safe.
+
 ### Additional Requirements (from Architecture)
 
 **Starter Template Required:**
@@ -135,11 +161,13 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 | FR-MNG-01~04 | Epic 5 | ProjectRoot + RuntimeStore runs, Artifact output, Execution Log, State UI |
 | FR-MNG-05 | Epic 11 | Hierarchical progress for nested workflows |
 | FR-MULTI-01~04 | Epic MDE-1 (linked addendum) | Runtime multimodal extraction, first-class tool path, model config, schema-driven extraction |
+| FR-PLAN-01~14 | Epic PLAN-1 (linked addendum) | Chat Plan Mode, empty-draft initialization, state-dependent chat semantics, plan editing, remarks, execution progress, and version rollover |
 | FR-SKL-01~08 | Epic 13 | Runtime-first Claude Code skill discovery, registry injection, activation, and execution bridge |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |
 | FR-SEC-03 | Epic 11 | Skill-based tool visibility |
+| NFR-PLAN-01~06 | Epic PLAN-1 (linked addendum) | Project-first isolation, traceability, recovery, testability, backward compatibility, bounded context injection |
 | NFR-SKL-01~04 | Epic 13 | Context-efficient skill consumption with deterministic boundaries and graceful failure |
 | NFR-USAB-01~02 | Epic 4, Epic 5 | Offline Mode, Local LLM Support |
 
@@ -230,6 +258,15 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - Package v1.2 adapter hook
 - Strict BMAD execution order: `13.1 -> 13.7 -> 13.2 -> 13.3 -> 13.4 -> 13.6 -> 13.5`
 - Current BMAD state: `13.1 done`; `13.7 done`; `13.2 done`; `13.3 done`; `13.4 done`; `13.6 done`; `13.5 blocked`
+
+---
+
+### Epic PLAN-1: Runtime Chat Plan Mode (Linked Addendum)
+**Goal**: Add a project-scoped Plan collaboration workflow inside existing Chat conversations, including plan artifacts, document editing, remarks, approval, execution, and progress visualization.
+**FRs covered**: FR-PLAN-01~10, NFR-PLAN-01~06
+**Details**:
+- See `_bmad-output/epics-runtime-chat-plan-mode.md`
+- See `_bmad-output/prd-runtime-chat-plan-mode.md`
 
 ---
 

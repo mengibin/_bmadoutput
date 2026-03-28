@@ -114,6 +114,10 @@ development_status:
   5-16-python-third-party-libraries: done  # Auto-install on ModuleNotFoundError
   5-17-file-drag-to-chat-attachment: review  # Implementation complete, pending verification
   5-19-cross-platform-terminal-command-execution: review
+  5-20-1-project-scoped-plan-storage-and-session-metadata: done
+  5-20-2-chat-plan-panel-and-preview: done
+  5-20-3-plan-tab-editing-and-remarks: done
+  5-20-4-approve-execute-and-progress-visualization: done
   epic-5-retrospective: optional
 
   epic-7: in-progress

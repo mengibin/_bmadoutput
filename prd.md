@@ -231,6 +231,22 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-MULTI-03**: Detailed requirements for multimodal extraction and validation are defined in the **[Runtime Multimodal Data Extraction PRD](prd-runtime-multimodal-data-extraction.md)**.
 *   **FR-MULTI-04**: Runtime must provide configurable multimodal LLM settings (provider/baseUrl/model/apiKey/timeout) and must return explicit capability errors when a configured model does not support multimodal input.
 
+### Chat Plan Collaboration Capabilities
+*   **FR-PLAN-01**: Runtime must support a `Plan` submode inside existing `Chat` conversations without introducing a new top-level conversation type.
+*   **FR-PLAN-02**: When Plan mode is first enabled for a chat conversation, Runtime must initialize project-scoped Plan artifacts under `@state/projects/<projectId>/plans/<conversationId>/`.
+*   **FR-PLAN-03**: Runtime must allow users to open and edit `plan.md` from the Chat workspace using the existing top-tab document experience.
+*   **FR-PLAN-04**: Runtime must support structured remarks attached to the current plan and persist them independently from the main plan markdown.
+*   **FR-PLAN-05**: When Chat Plan Mode is active, Runtime must inject current plan content, remarks, and plan status into chat context so the LLM can continue refining the plan.
+*   **FR-PLAN-06**: Runtime must allow the user to approve and execute a plan from the Chat workspace.
+*   **FR-PLAN-07**: Runtime must provide independent plan progress visualization based on plan state, separate from workflow graph progress.
+*   **FR-PLAN-08**: Detailed requirements for Chat Plan Mode are defined in the **[Runtime Chat Plan Mode PRD](prd-runtime-chat-plan-mode.md)**.
+*   **FR-PLAN-09**: Plan lifecycle state changes must be triggered by explicit UI actions, not by chat command envelopes.
+*   **FR-PLAN-10**: When execution pauses for user decision, user input should default to continuing the current waiting task rather than rewriting the entire plan.
+*   **FR-PLAN-11**: When Plan mode is enabled, `plan.md` must be initialized as an empty draft rather than a prefilled template.
+*   **FR-PLAN-12**: Chat input semantics in Plan mode must be state-dependent: drafting/reviewing input edits the plan, while waiting-user input continues the current task.
+*   **FR-PLAN-13**: After all tasks of the current plan are completed, the next chat submission must start a new plan version rather than overwrite the completed one.
+*   **FR-PLAN-14**: When a waiting-user task exists, clicking `Regenerate Plan` must reinterpret the current chat draft as a plan refinement request instead of an execution decision.
+
 ## Non-Functional Requirements
 
 ### Reliability & Availability
@@ -245,6 +261,14 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **NFR-USAB-01**: The Runtime Client must be **fully operational offline** after initial license activation. No "phone home" or cloud dependency is required for execution.
 *   **NFR-USAB-02**: The Client must support connecting to **local LLM endpoints** (e.g., Ollama, LM Studio) for completely air-gapped operation.
 
+### Chat Plan Mode
+*   **NFR-PLAN-01**: All Plan artifacts must be isolated under a project-first namespace so they can be cleaned per project.
+*   **NFR-PLAN-02**: Plan artifacts, remarks, and progress state must be traceable by `projectId + conversationId`.
+*   **NFR-PLAN-03**: Chat Plan Mode must restore plan status and progress after application restart.
+*   **NFR-PLAN-04**: Chat Plan Mode stories must be decomposed into front-end/back-end integrated, independently testable increments.
+*   **NFR-PLAN-05**: Chat Plan Mode must remain backward-compatible with existing `workflow / agent / chat` behavior.
+*   **NFR-PLAN-06**: Chat Plan Mode context injection must remain bounded and avoid unbounded full-plan prompt growth.
+
 ---
 
 ## Linked Requirement Documents
@@ -255,6 +279,8 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
   `_bmad-output/prd-runtime-license-verification.md`
 - **Runtime multimodal data extraction requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-multimodal-data-extraction.md`
+- **Runtime Chat Plan Mode requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-chat-plan-mode.md`
 - **Runtime Claude Code Skills requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-claude-code-skills.md`
 - **Runtime personal knowledge base requirements (linked sub-PRD):**
