@@ -130,6 +130,15 @@ development_status:
   8-4-project-data-management: review
   epic-8-retrospective: optional
 
+  epic-9: done
+  9-1-csv-excel-editor: done
+  9-2-enhanced-markdown-editor: done
+  9-3-directory-structure-refresh: done
+  9-4-file-system-operations-delete: done
+  9-5-file-system-operations-move: done
+  9-6-interactive-html-artifact-save-bridge: done
+  epic-9-retrospective: optional
+
   epic-10: in-progress
   10-1-runtime-trial-gate-first-run: done
   10-2-machine-id-generation: done
