@@ -22,6 +22,8 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
   `_bmad-output/epics-runtime-multimodal-data-extraction.md`
 - Runtime Chat Plan Mode addendum:
   `_bmad-output/epics-runtime-chat-plan-mode.md`
+- Runtime SDK Wiki and trusted SDK tool governance addendum:
+  `_bmad-output/epics-runtime-sdk-wiki-and-tool-risk.md`
 
 ## Requirements Inventory
 
@@ -102,6 +104,16 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - FR-SKL-07: Runtime must provide an adapter path so package v1.2 `skills.imports` can reuse the same runtime skill mechanism.
 - FR-SKL-08: Runtime must log skill discovery, activation, resource loading, and error diagnostics for audit.
 
+**Runtime SDK Wiki and Trusted SDK Tool Governance Capabilities:**
+- FR-SDKW-01: Runtime must import, validate, and register external SDK Wiki Packs from directories or archives.
+- FR-SDKW-02: Runtime must store installed SDK Wiki Packs under RuntimeStore by `sdkId/version` and list installed SDK Wikis.
+- FR-SDKW-03: Runtime must expose internal `sdk_wiki.*` abilities for SDK page search, page reading, symbol resolution, relation expansion, and API usage planning.
+- FR-SDKW-04: SDK API recommendations and plans must reference existing SDK Wiki pages and report missing knowledge instead of inventing API names.
+- FR-SDKW-05: SDK understanding and planning LLM reasoning must happen inside CrewAgent Runtime, not inside SDK Bridge or external MCP servers.
+- FR-SDKW-06: Runtime must accept SDK governance metadata with risk labels `read`, `model_write`, `file_write`, `solve`, or `destructive`.
+- FR-SDKW-07: Runtime must trust MCP-exposed SDK tools under existing effective tool policy and write SDK governance audit logs with purpose, risk, governance state/warnings, status, duration, and failure summary.
+- FR-SDKW-08: Detailed SDK Wiki and trusted SDK tool governance requirements are maintained in linked sub-PRD and epics addendum.
+
 ### Non-Functional Requirements
 
 **Reliability & Availability:**
@@ -121,6 +133,13 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - NFR-SKL-02: Skill access boundaries and tool narrowing rules must be deterministic and host-controlled.
 - NFR-SKL-03: Skills must not expand privileges beyond current runtime and agent tool policy.
 - NFR-SKL-04: Invalid skills or missing dependencies must fail gracefully with structured errors.
+
+**Runtime SDK Wiki and Trusted SDK Tool Governance:**
+- NFR-SDKW-01: SDK Wiki import must be transactional and must not leave partial registrations after validation failure.
+- NFR-SDKW-02: SDK Wiki retrieval must use imported indexes as authority and avoid unbounded full-Wiki prompt injection.
+- NFR-SDKW-03: SDK API recommendations must be traceable to source Wiki pages.
+- NFR-SDKW-04: SDK tool execution must obey existing Runtime effective tool policy; execution safety belongs to MCP/integration software.
+- NFR-SDKW-05: SDK Wiki and risk policy data models must remain SDK-generic and avoid SAM-only hardcoding.
 
 **Runtime Chat Plan Mode:**
 - NFR-PLAN-01: Plan artifacts must use project-first isolation for cleanup.
@@ -163,12 +182,14 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 | FR-MULTI-01~04 | Epic MDE-1 (linked addendum) | Runtime multimodal extraction, first-class tool path, model config, schema-driven extraction |
 | FR-PLAN-01~14 | Epic PLAN-1 (linked addendum) | Chat Plan Mode, empty-draft initialization, state-dependent chat semantics, plan editing, remarks, execution progress, and version rollover |
 | FR-SKL-01~08 | Epic 13 | Runtime-first Claude Code skill discovery, registry injection, activation, and execution bridge |
+| FR-SDKW-01~08 | Epic 14 (linked addendum) | Runtime SDK Wiki import, internal SDK knowledge module, source-referenced API planning, and trusted SDK tool governance |
 | NFR-REL-01~02 | Epic 5 | Graceful Recovery, Tool Timeout |
 | NFR-SEC-01 | Epic 5 | API Key Storage |
 | NFR-SEC-02 | Epic 4 | Sandboxed Execution |
 | FR-SEC-03 | Epic 11 | Skill-based tool visibility |
 | NFR-PLAN-01~06 | Epic PLAN-1 (linked addendum) | Project-first isolation, traceability, recovery, testability, backward compatibility, bounded context injection |
 | NFR-SKL-01~04 | Epic 13 | Context-efficient skill consumption with deterministic boundaries and graceful failure |
+| NFR-SDKW-01~05 | Epic 14 (linked addendum) | Transactional SDK Wiki import, indexed retrieval, traceable API planning, and trusted MCP governance |
 | NFR-USAB-01~02 | Epic 4, Epic 5 | Offline Mode, Local LLM Support |
 
 ## Epic List
@@ -176,7 +197,7 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 ### Epic 1: Project Initialization & Infrastructure
 **Goal**: Developers can set up all three repositories and run basic "hello world" apps.
 **FRs covered**: Architecture Starter Templates
-**Deliverables**: 
+**Deliverables**:
 - `crewagent-builder-frontend/` (Next.js) initialized
 - `crewagent-builder-backend/` (FastAPI) initialized
 - `crewagent-runtime/` (Electron) initialized
@@ -258,6 +279,17 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - Package v1.2 adapter hook
 - Strict BMAD execution order: `13.1 -> 13.7 -> 13.2 -> 13.3 -> 13.4 -> 13.6 -> 13.5`
 - Current BMAD state: `13.1 done`; `13.7 done`; `13.2 done`; `13.3 done`; `13.4 done`; `13.6 done`; `13.5 blocked`
+
+---
+
+### Epic 14: Runtime SDK Wiki and Trusted SDK Tool Governance (Linked Addendum)
+**Goal**: Let Runtime import and manage versioned SDK Wiki Packs, expose SDK-aware internal knowledge abilities to the main LLM, and observe trusted MCP SDK execution tools with governance metadata and audit.
+**FRs covered**: FR-SDKW-01~30 plus FR-SDKW-10A~10B, NFR-SDKW-01~08
+**Details**:
+- See `_bmad-output/epics-runtime-sdk-wiki-and-tool-risk.md`
+- See `_bmad-output/prd-runtime-sdk-wiki-and-tool-risk.md`
+- See `_bmad-output/architecture/runtime-sdk-wiki-and-tool-risk-architecture.md`
+- Current BMAD order: `14.1 -> 14.2 -> 14.3 SDK Wiki Pack Management UI and Remove -> 14.4 -> 14.5 -> 14.6`
 
 ---
 
@@ -1950,8 +1982,8 @@ This keeps the runtime simple while preserving LLM flexibility.
 
 ### Story 11.1: v1.2 Schema Upgrade
 
-As a **Runtime Developer**,  
-I want the `.bmad` schemas to include v1.2 fields for subworkflow and skills,  
+As a **Runtime Developer**,
+I want the `.bmad` schemas to include v1.2 fields for subworkflow and skills,
 So that packages can be validated consistently.
 
 **Acceptance Criteria:**
@@ -1963,8 +1995,8 @@ So that packages can be validated consistently.
 
 ### Story 11.2: Run State Split & Alias
 
-As a **Runtime Developer**,  
-I want a run-level state file with active workflow and callStack,  
+As a **Runtime Developer**,
+I want a run-level state file with active workflow and callStack,
 So that nested workflows can resume correctly.
 
 **Acceptance Criteria:**
@@ -1976,8 +2008,8 @@ So that nested workflows can resume correctly.
 
 ### Story 11.3: Subworkflow Call/Return
 
-As a **Runtime Developer**,  
-I want subworkflow nodes to call and return deterministically,  
+As a **Runtime Developer**,
+I want subworkflow nodes to call and return deterministically,
 So that nested flows complete and resume the parent flow.
 
 **Acceptance Criteria:**
@@ -1989,8 +2021,8 @@ So that nested flows complete and resume the parent flow.
 
 ### Story 11.4: Hierarchical Progress
 
-As a **User**,  
-I want to see nested workflow progress,  
+As a **User**,
+I want to see nested workflow progress,
 So that I can track where the run is and what’s finished.
 
 **Acceptance Criteria:**
@@ -2001,8 +2033,8 @@ So that I can track where the run is and what’s finished.
 
 ### Story 11.5: Portable Skills Runtime
 
-As a **Package Author**,  
-I want to bundle skills with my package and bind them to agents,  
+As a **Package Author**,
+I want to bundle skills with my package and bind them to agents,
 So that tools are portable and role-scoped.
 
 **Acceptance Criteria:**
@@ -2023,39 +2055,39 @@ So that tools are portable and role-scoped.
 
 ### Story 12.1: Personal KB Storage & Candidate Commit
 
-As a **Consumer**,  
-I want personal memory to be stored in a structured local directory and written only after explicit confirmation,  
+As a **Consumer**,
+I want personal memory to be stored in a structured local directory and written only after explicit confirmation,
 So that long-term preferences are reusable without silent memory pollution.
 
 **Acceptance Criteria:**
 
-**Given** Runtime starts and personal knowledge has not been initialized  
-**When** I start a conversation in any mode (`chat/agent/run`)  
+**Given** Runtime starts and personal knowledge has not been initialized
+**When** I start a conversation in any mode (`chat/agent/run`)
 **Then** the system creates personal KB structure under Runtime private state (`USER.md`, `SOUL.md`, `MEMORY.md`, daily `memory/YYYY-MM-DD.md`, `index.json`)
 **And** Settings 仅暴露极简治理入口（清空个人记忆 / 重新整理个人记忆）
 
-**Given** I express explicit memory intent (e.g., "记住这个")  
-**When** the system receives this intent in any mode (`chat/agent/run`) and runs LLM routing  
-**Then** it must request my confirmation before writing  
+**Given** I express explicit memory intent (e.g., "记住这个")
+**When** the system receives this intent in any mode (`chat/agent/run`) and runs LLM routing
+**Then** it must request my confirmation before writing
 **And** unconfirmed candidates are not persisted
 **And** UI provides approve/reject interaction for this candidate in the same conversation flow
 **And** invalid/low-confidence routing cannot directly write files (must clarify or fallback)
 
-**Given** a candidate is approved  
-**When** it is committed  
-**Then** the entry includes `source` and `updatedAt` metadata  
+**Given** a candidate is approved
+**When** it is committed
+**Then** the entry includes `source` and `updatedAt` metadata
 **And** index is incrementally updated
 **And** `MEMORY.md` 写入必须区分 `Pinned`（固定层）与 `General`（检索层），不能默认全部进入固定层
 **And** commit result is surfaced to UI (success/failure message)
 **And** this write path is available in `chat/agent/run`, while retrieval/injection remains chat-only (Story 12.2)
 
-**Given** index is corrupted  
-**When** rebuild is triggered  
+**Given** index is corrupted
+**When** rebuild is triggered
 **Then** index can be rebuilt from Markdown truth sources
 **And** UI shows rebuild progress and result
 
-**Given** user chooses to erase personal memory  
-**When** clear action is confirmed  
+**Given** user chooses to erase personal memory
+**When** clear action is confirmed
 **Then** Runtime clears `MEMORY.md` and `memory/*.md` content and resets index
 **And** UI returns simple success/failure feedback without exposing technical file details
 
@@ -2063,62 +2095,62 @@ So that long-term preferences are reusable without silent memory pollution.
 
 ### Story 12.2: Chat-Only Personal KB Retrieval & Injection
 
-As a **Consumer**,  
-I want personal memory to augment only chat conversations,  
+As a **Consumer**,
+I want personal memory to augment only chat conversations,
 So that agent/run workflows are not impacted by personal preferences.
 
 **Acceptance Criteria:**
 
-**Given** current mode is `chat`  
-**When** context is built for an answer  
-**Then** system always injects fixed core memory (`SOUL.md`, `USER.md`)  
-**And** system additionally injects `MEMORY.md#Pinned`（如存在）  
-**And** long-tail memory injection uses query-based top-k retrieval from `MEMORY.md#General`（及 legacy non-pinned）and recent non-empty daily memory (`memory/YYYY-MM-DD.md`)  
+**Given** current mode is `chat`
+**When** context is built for an answer
+**Then** system always injects fixed core memory (`SOUL.md`, `USER.md`)
+**And** system additionally injects `MEMORY.md#Pinned`（如存在）
+**And** long-tail memory injection uses query-based top-k retrieval from `MEMORY.md#General`（及 legacy non-pinned）and recent non-empty daily memory (`memory/YYYY-MM-DD.md`)
 **And** personal injection remains transparent to end users (no chat UI badge/toast)
 
-**Given** current mode is `agent` or `run`  
-**When** context is built  
+**Given** current mode is `agent` or `run`
+**When** context is built
 **Then** personal KB retrieval/injection is skipped
 **And** no user-facing skip indicator is shown in agent/run UI
 
-**Given** personal knowledge is used or skipped  
-**When** runtime logs events  
+**Given** personal knowledge is used or skipped
+**When** runtime logs events
 **Then** logs can distinguish `chat hit injection` vs `chat miss` vs `agent/run skipped`
 
-**Given** a memory is marked as long-term and must always take effect  
-**When** memory is persisted from Story 12.1 write path  
-**Then** it should be routed into `SOUL.md` / `USER.md` / `MEMORY.md#Pinned`  
-**And** long-tail reusable memory should be routed into `MEMORY.md#General`  
+**Given** a memory is marked as long-term and must always take effect
+**When** memory is persisted from Story 12.1 write path
+**Then** it should be routed into `SOUL.md` / `USER.md` / `MEMORY.md#Pinned`
+**And** long-tail reusable memory should be routed into `MEMORY.md#General`
 **And** daily memory should be treated as long-tail retrieval source, not fixed-injection source
 
 ---
 
 ### Story 12.3: Project KB Import / Extract / Index / Search
 
-As a **Project Executor**,  
-I want each project to have an isolated local knowledge space that can ingest reference files and support retrieval,  
+As a **Project Executor**,
+I want each project to have an isolated local knowledge space that can ingest reference files and support retrieval,
 So that execution can reuse project knowledge consistently.
 
 **Acceptance Criteria:**
 
-**Given** a new project is created  
-**When** Runtime initializes project data  
+**Given** a new project is created
+**When** Runtime initializes project data
 **Then** it creates an empty project knowledge directory at `runtime-store/projects/<projectId>/knowledge/`
 **And** Project Settings UI shows "empty knowledge base" state
 
-**Given** I import project files  
-**When** ingestion runs  
-**Then** supported types include `.pdf`, `.docx`, `.md`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.webp`  
+**Given** I import project files
+**When** ingestion runs
+**Then** supported types include `.pdf`, `.docx`, `.md`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.webp`
 **And** each source is recorded with file metadata and import timestamp
 **And** UI shows per-file progress and failure reason for failed files
 
-**Given** ingestion completes  
-**When** extraction and indexing run  
-**Then** extracted content is normalized into `extracted/`  
+**Given** ingestion completes
+**When** extraction and indexing run
+**Then** extracted content is normalized into `extracted/`
 **And** searchable chunks are written to local `index.json` metadata/catalog
 
-**Given** a project query is executed  
-**When** results are returned  
+**Given** a project query is executed
+**When** results are returned
 **Then** each hit includes at least `sourceFile`, `snippet`, `score`
 **And** results can be displayed in UI with source trace
 
@@ -2126,25 +2158,25 @@ So that execution can reuse project knowledge consistently.
 
 ### Story 12.4: Project KB Orphan Cleanup Integration
 
-As a **Consumer**,  
-I want orphan project cleanup to include project knowledge residuals,  
+As a **Consumer**,
+I want orphan project cleanup to include project knowledge residuals,
 So that Runtime private storage remains consistent after project folders are removed.
 
 **Acceptance Criteria:**
 
-**Given** a project root no longer exists  
-**When** orphan detection runs  
+**Given** a project root no longer exists
+**When** orphan detection runs
 **Then** orphan entries include project metadata plus runtime residual stats (conversation count and total size)
 **And** UI explicitly indicates that knowledge residuals are included in cleanup scope
 
-**Given** I execute orphan delete  
-**When** deletion is confirmed  
-**Then** Runtime removes `runtime-store/projects/<projectId>/` completely  
+**Given** I execute orphan delete
+**When** deletion is confirmed
+**Then** Runtime removes `runtime-store/projects/<projectId>/` completely
 **And** residual conversations and knowledge files are both removed
 **And** UI refreshes orphan list and shows deletion outcome
 
-**Given** I execute orphan rebind  
-**When** binding succeeds  
+**Given** I execute orphan rebind
+**When** binding succeeds
 **Then** existing conversations and project knowledge remain available under the re-bound project
 **And** UI reflects the recovered project immediately
 
@@ -2152,53 +2184,53 @@ So that Runtime private storage remains consistent after project folders are rem
 
 ### Story 12.5: Project KB Export / Import Migration
 
-As a **Consumer**,  
-I want to export and import project knowledge archives,  
+As a **Consumer**,
+I want to export and import project knowledge archives,
 So that reusable knowledge can be migrated across projects or devices.
 
 **Acceptance Criteria:**
 
-**Given** I export project knowledge  
-**When** export completes  
+**Given** I export project knowledge
+**When** export completes
 **Then** archive contains `source/`, `extracted/`, `notes/`, `manifest.json`, and integrity checks
 **And** UI provides export path/result feedback
 
-**Given** I import a knowledge archive into target project  
-**When** archive passes validation  
-**Then** data is restored into target knowledge directory  
+**Given** I import a knowledge archive into target project
+**When** archive passes validation
+**Then** data is restored into target knowledge directory
 **And** target index is rebuilt
 **And** UI shows import summary (imported files, skipped files, rebuild result)
 
-**Given** import fails at any stage  
-**When** rollback executes  
-**Then** target project knowledge returns to pre-import state  
+**Given** import fails at any stage
+**When** rollback executes
+**Then** target project knowledge returns to pre-import state
 **And** failure is logged with reason
 **And** UI clearly indicates rollback completed
 
-**Given** import succeeds  
-**When** I edit imported content later  
+**Given** import succeeds
+**When** I edit imported content later
 **Then** source and target projects evolve independently (copy semantics)
 
 ---
 
 ### Story 12.6: Knowledge Management UI & Index Rebuild
 
-As a **Consumer**,  
-I want a basic management UI for personal/project knowledge operations,  
+As a **Consumer**,
+I want a basic management UI for personal/project knowledge operations,
 So that I can inspect sources, trigger maintenance, and recover from index issues.
 
 **Acceptance Criteria:**
 
-**Given** I open Runtime settings/project data views  
-**When** knowledge module is available  
+**Given** I open Runtime settings/project data views
+**When** knowledge module is available
 **Then** I can see personal/project knowledge status and storage summary
 
-**Given** I need maintenance  
-**When** I trigger rebuild index  
+**Given** I need maintenance
+**When** I trigger rebuild index
 **Then** system rebuilds index from local truth sources and reports result
 
-**Given** I need governance visibility  
-**When** I inspect operation records  
+**Given** I need governance visibility
+**When** I inspect operation records
 **Then** I can review key events (import, commit, orphan cleanup, migration)
 **And** I can jump from operation records to related source/knowledge entries
 
@@ -2233,148 +2265,148 @@ So that I can inspect sources, trigger maintenance, and recover from index issue
 
 ### Story 13.1: Runtime Skill Discovery & Registry Injection
 
-As a **Runtime User**,  
-I want Runtime to discover attached Claude Code skills and expose a compact registry to the LLM,  
+As a **Runtime User**,
+I want Runtime to discover attached Claude Code skills and expose a compact registry to the LLM,
 So that the model knows which skills are available without preloading all skill content.
 
 **Acceptance Criteria:**
 
-**Given** the host attaches one or more runtime-accessible skill sources  
-**When** Runtime initializes the session context  
+**Given** the host attaches one or more runtime-accessible skill sources
+**When** Runtime initializes the session context
 **Then** it discovers valid Claude Code style `SKILL.md` skills
 **And** parses each skill into a normalized internal model with `skillId`, `description`, root path, and supporting file index
 **And** excludes invalid or out-of-scope skill sources with structured diagnostics
 
-**Given** valid skills are discovered  
-**When** the initial system prompt is composed  
+**Given** valid skills are discovered
+**When** the initial system prompt is composed
 **Then** Runtime injects a skill registry block listing available skills and one-line descriptions
 **And** it does not inject the full skill body at this stage
 **And** the registry is filtered by the current effective agent scope
 
 ### Story 13.7: Effective Skill Source Composition & User-Global Scope
 
-As a **Runtime User**,  
-I want Runtime to resolve `user-global` and `session` skill sources into one effective set for each turn,  
+As a **Runtime User**,
+I want Runtime to resolve `user-global` and `session` skill sources into one effective set for each turn,
 So that my default reusable skills are available across projects while session inputs can extend or override them predictably.
 
 **Acceptance Criteria:**
 
-**Given** Runtime has a configured user-global skills directory under its private state  
-**When** chat, agent, or run mode initializes session context  
-**Then** Runtime auto-discovers valid Claude Code skills from that directory  
-**And** exposes them to all projects by default without requiring per-session attachment  
+**Given** Runtime has a configured user-global skills directory under its private state
+**When** chat, agent, or run mode initializes session context
+**Then** Runtime auto-discovers valid Claude Code skills from that directory
+**And** exposes them to all projects by default without requiring per-session attachment
 **And** excludes invalid global skills with structured diagnostics rather than failing the session
 
-**Given** user-global and session-attached skill sources are both present  
-**When** Runtime builds the effective skill source list  
-**Then** it composes them with deterministic precedence `session > user-global`  
-**And** deduplicates identical resolved sources  
+**Given** user-global and session-attached skill sources are both present
+**When** Runtime builds the effective skill source list
+**Then** it composes them with deterministic precedence `session > user-global`
+**And** deduplicates identical resolved sources
 **And** emits structured diagnostics for `skillId` or source collisions instead of silently changing precedence
 
-**Given** downstream discovery and registry injection already use `attachedSkills`  
-**When** the effective skill source list is produced  
-**Then** Runtime reuses the Story 13.1 discovery and registry pipeline without introducing a parallel skill loading path  
+**Given** downstream discovery and registry injection already use `attachedSkills`
+**When** the effective skill source list is produced
+**Then** Runtime reuses the Story 13.1 discovery and registry pipeline without introducing a parallel skill loading path
 **And** all three modes consume the same source-composition service
 **And** Runtime leaves a package-layer extension hook for Story 13.5 without implementing package imports in this story
 
-**Given** Runtime has a user-global skills root under private state  
-**When** the user opens Runtime settings  
-**Then** the UI shows the imported skill entries  
+**Given** Runtime has a user-global skills root under private state
+**When** the user opens Runtime settings
+**Then** the UI shows the imported skill entries
 **And** the user can import and remove user-global skills without manually editing the filesystem
 
 ### Story 13.2: LLM-Driven Skill Activation & Context Mutation
 
-As a **Runtime User**,  
-I want the main model to decide when to activate a skill during the conversation,  
+As a **Runtime User**,
+I want the main model to decide when to activate a skill during the conversation,
 So that skill usage follows model judgment rather than a separate routing step.
 
 **Acceptance Criteria:**
 
-**Given** the model sees a skill registry in context  
-**When** it decides a skill should be used  
+**Given** the model sees a skill registry in context
+**When** it decides a skill should be used
 **Then** it can call a dedicated internal activation tool for an allowed skill
 **And** Runtime rejects activation for skills with `disable-model-invocation=true`
 
-**Given** skill activation succeeds  
-**When** the tool loop continues to the next model turn  
+**Given** skill activation succeeds
+**When** the tool loop continues to the next model turn
 **Then** Runtime injects the activated skill instructions as new system context
 **And** recomputes the visible tools for the next turn
 **And** keeps the activation state only within the current loop, without persisting it to conversation or workflow state
 
 ### Story 13.3: Supporting Files Loading & Tool Narrowing
 
-As a **Runtime User**,  
-I want the model to load supporting files only when needed and to obey the skill’s allowed tool scope,  
+As a **Runtime User**,
+I want the model to load supporting files only when needed and to obey the skill’s allowed tool scope,
 So that context remains efficient and the skill cannot widen permissions.
 
 **Acceptance Criteria:**
 
-**Given** a skill is active and declares supporting files  
-**When** the model requests a supporting file  
+**Given** a skill is active and declares supporting files
+**When** the model requests a supporting file
 **Then** Runtime allows loading only files explicitly linked by the skill and only within that skill’s root directory
 **And** returns structured errors for undeclared or out-of-scope paths
 
-**Given** a skill defines `allowed-tools`  
-**When** the skill becomes active  
+**Given** a skill defines `allowed-tools`
+**When** the skill becomes active
 **Then** Runtime narrows the visible tool set based on a deterministic mapping to existing runtime tools
 **And** never grants tools that are not already allowed by runtime and agent policy
 
 ### Story 13.4: Python/Node/Terminal Skill Execution Bridge
 
-As a **Runtime User**,  
-I want activated skills to work through the existing execution tools,  
+As a **Runtime User**,
+I want activated skills to work through the existing execution tools,
 So that supporting scripts can actually run inside Runtime.
 
 **Acceptance Criteria:**
 
-**Given** a skill references Python or JavaScript supporting scripts or module-style entrypoints  
-**When** the model calls language execution through the skill flow  
+**Given** a skill references Python or JavaScript supporting scripts or module-style entrypoints
+**When** the model calls language execution through the skill flow
 **Then** Runtime supports `python.run` with `code`, `file`, or `module`
 **And** Runtime supports `node.run` with `code`, `file`, or `module`
 **And** skill-relative file paths can resolve through a stable skill alias
 
-**Given** a JavaScript skill depends on npm packages  
-**When** execution encounters missing npm dependencies  
+**Given** a JavaScript skill depends on npm packages
+**When** execution encounters missing npm dependencies
 **Then** Runtime can install them through `npm.install` in an isolated skill workspace
 **And** if auto-install is enabled it retries the failed `node.run` once after installation
 
-**Given** a skill relies on Python, Node, or shell execution  
-**When** execution is attempted  
+**Given** a skill relies on Python, Node, or shell execution
+**When** execution is attempted
 **Then** Runtime reuses current Python dependency handling, bundled Node.js/npm, and existing terminal bridge
 **And** returns structured errors for missing system dependencies instead of silent failure
 
 ### Story 13.5: Package v1.2 Skill Import Adapter
 
-As a **Package Author**,  
-I want future package-bound skill imports to reuse the runtime-first skill mechanism,  
+As a **Package Author**,
+I want future package-bound skill imports to reuse the runtime-first skill mechanism,
 So that package support does not fork the activation and execution architecture.
 
 **Acceptance Criteria:**
 
-**Given** Epic 11.1 introduces package `skills.imports`  
-**When** Runtime loads a package-bound skill declaration  
+**Given** Epic 11.1 introduces package `skills.imports`
+**When** Runtime loads a package-bound skill declaration
 **Then** it adapts the package declaration into the same internal skill source structure used by runtime-first attached skills
 **And** it feeds the package layer into the same effective skill source composition used by user-global and session skills
 **And** it does not duplicate skill parsing, activation, resource loading, or tool narrowing logic
 
-**Given** the same skill can be attached runtime-first or declared in package v1.2  
-**When** Runtime resolves it  
+**Given** the same skill can be attached runtime-first or declared in package v1.2
+**When** Runtime resolves it
 **Then** both paths converge on the same effective skill source composition, skill registry, and activation pipeline
 
 ### Story 13.6: Effective Agent / Run Mode / Audit Alignment
 
-As a **Runtime Developer**,  
-I want skill visibility and audit behavior to align with effective agent selection and run mode execution,  
+As a **Runtime Developer**,
+I want skill visibility and audit behavior to align with effective agent selection and run mode execution,
 So that skill behavior remains predictable across chat, agent, and run loops.
 
 **Acceptance Criteria:**
 
-**Given** Runtime is operating in chat, agent, or run mode  
-**When** skills are resolved for the current turn  
+**Given** Runtime is operating in chat, agent, or run mode
+**When** skills are resolved for the current turn
 **Then** visible skills are scoped to the current effective agent
 **And** skill activation does not leak across agent boundaries
 
-**Given** a skill is discovered, activated, loads a resource, or fails  
-**When** Runtime records diagnostics  
+**Given** a skill is discovered, activated, loads a resource, or fails
+**When** Runtime records diagnostics
 **Then** it writes structured audit events for discovery, activation, resource loading, and errors
 **And** each event includes enough identifiers to trace package, workflow, run, agent, and skill context

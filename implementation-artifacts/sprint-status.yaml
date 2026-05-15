@@ -166,6 +166,15 @@ development_status:
   13-5-package-v1-2-skill-import-adapter: blocked
   epic-13-retrospective: optional
 
+  epic-14: done
+  14-1-sdk-wiki-pack-import-and-registry: done
+  14-2-sdk-wiki-search-read-symbol-and-relation-module: done
+  14-3-sdk-wiki-pack-management-ui-and-remove: done
+  14-4-sdk-api-usage-planning-with-source-references: done
+  14-5-sdk-tool-risk-confirmation-and-audit-gate: done
+  14-6-sam-golden-path-and-generic-sdk-adapter-contract: done
+  epic-14-retrospective: done
+
   epic-mde-1: in-progress
   mde-1-1-multimodal-model-configuration-capability-guard: review
   mde-1-2-first-class-media-extract-binary-fallback-policy: done

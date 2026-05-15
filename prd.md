@@ -1,6 +1,6 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-inputDocuments: 
+inputDocuments:
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/product-brief-CrewAgent-2025-12-20.md'
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/research/technical-architecture-decision-research-2025-12-20.md'
   - '/Users/mengbin/code/GPT/CrewAgent/_bmad-output/analysis/brainstorming-session-2025-12-19.md'
@@ -16,7 +16,7 @@ workflowComplete: true
 project_name: 'CrewAgent'
 user_name: 'Mengbin'
 date: '2025-12-20'
-updated: '2026-02-27'
+updated: '2026-05-13'
 ---
 
 # Product Requirements Document - CrewAgent
@@ -247,6 +247,16 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **FR-PLAN-13**: After all tasks of the current plan are completed, the next chat submission must start a new plan version rather than overwrite the completed one.
 *   **FR-PLAN-14**: When a waiting-user task exists, clicking `Regenerate Plan` must reinterpret the current chat draft as a plan refinement request instead of an execution decision.
 
+### SDK Wiki and Trusted SDK Tool Governance Capabilities
+*   **FR-SDKW-01**: Runtime must import, validate, and register external SDK Wiki Packs from directories or archives.
+*   **FR-SDKW-02**: Runtime must store installed SDK Wiki Packs under RuntimeStore by `sdkId/version`, list installed SDK Wikis, and provide visible Settings controls to import and remove installed packs.
+*   **FR-SDKW-03**: Runtime must expose internal `sdk_wiki.*` abilities for SDK page search, page reading, symbol resolution, relation expansion, and API usage planning.
+*   **FR-SDKW-04**: SDK API recommendations and plans must reference existing SDK Wiki pages and report missing knowledge instead of inventing API names.
+*   **FR-SDKW-05**: SDK understanding and planning LLM reasoning must happen inside CrewAgent Runtime, not inside SDK Bridge or external MCP servers.
+*   **FR-SDKW-06**: Runtime must accept SDK tool governance metadata with risk labels `read`, `model_write`, `file_write`, `solve`, or `destructive`.
+*   **FR-SDKW-07**: Runtime must trust MCP-exposed SDK tools under existing effective tool policy and write SDK governance audit logs with purpose, risk, governance state/warnings, status, duration, and failure summary.
+*   **FR-SDKW-08**: Detailed requirements are defined in the **[Runtime SDK Wiki and Tool Risk PRD](prd-runtime-sdk-wiki-and-tool-risk.md)**.
+
 ## Non-Functional Requirements
 
 ### Reliability & Availability
@@ -269,6 +279,13 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 *   **NFR-PLAN-05**: Chat Plan Mode must remain backward-compatible with existing `workflow / agent / chat` behavior.
 *   **NFR-PLAN-06**: Chat Plan Mode context injection must remain bounded and avoid unbounded full-plan prompt growth.
 
+### SDK Wiki and Trusted SDK Tool Governance
+*   **NFR-SDKW-01**: SDK Wiki import must be transactional and must not leave partial registrations after validation failure.
+*   **NFR-SDKW-02**: SDK Wiki retrieval must use imported indexes as authority and avoid unbounded full-Wiki prompt injection.
+*   **NFR-SDKW-03**: SDK API recommendations must be traceable to source Wiki pages.
+*   **NFR-SDKW-04**: SDK tool execution must obey existing Runtime effective tool policy; execution safety belongs to MCP/integration software.
+*   **NFR-SDKW-05**: SDK Wiki and risk policy data models must remain SDK-generic and avoid SAM-only hardcoding.
+
 ---
 
 ## Linked Requirement Documents
@@ -283,6 +300,8 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
   `_bmad-output/prd-runtime-chat-plan-mode.md`
 - **Runtime Claude Code Skills requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-claude-code-skills.md`
+- **Runtime SDK Wiki and trusted SDK tool governance requirements (linked sub-PRD):**
+  `_bmad-output/prd-runtime-sdk-wiki-and-tool-risk.md`
 - **Runtime personal knowledge base requirements (linked sub-PRD):**
   `_bmad-output/prd-runtime-personal-knowledge-base.md`
 - **Runtime project knowledge base requirements (linked sub-PRD):**
@@ -413,7 +432,7 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 #### A.3.2 严格模式（可选）：专用状态更新工具
 
-默认模式：LLM 直接用 `fs.apply_patch/fs.write` 更新 `@state/workflow.md`；Runtime 负责原子落盘、YAML 校验、跳转合法性校验。  
+默认模式：LLM 直接用 `fs.apply_patch/fs.write` 更新 `@state/workflow.md`；Runtime 负责原子落盘、YAML 校验、跳转合法性校验。
 可选增强：提供 `runtime.update_state(...)` / `runtime.complete_node(...)` 由 Runtime 负责读-改-写与校验（作为开关不影响 Cursor 兼容性）。
 
 ### A.4 安全与可靠性（必须从一开始做）
@@ -445,12 +464,12 @@ Since CrewAgent operates in high-precision domains, "Hallucination" is not just 
 
 ### A.6 MVP 里程碑（建议）
 
-1) 导入 `.bmad` → 选择 Project → 创建 run（RuntimeStore）→ 展示 steps 列表  
-2) 实现 `fs.read/fs.write/fs.apply_patch` ToolCalls（含沙箱与 frontmatter 校验）  
-3) 让 LLM 跑通 step-01 → 写入 artifact → 更新 frontmatter  
-4) 增加 `fs.search`、完善日志与 UI  
-5) （可选）严格模式状态更新工具  
-6) 之后再引入 MCP（stdio driver）与审批/权限  
+1) 导入 `.bmad` → 选择 Project → 创建 run（RuntimeStore）→ 展示 steps 列表
+2) 实现 `fs.read/fs.write/fs.apply_patch` ToolCalls（含沙箱与 frontmatter 校验）
+3) 让 LLM 跑通 step-01 → 写入 artifact → 更新 frontmatter
+4) 增加 `fs.search`、完善日志与 UI
+5) （可选）严格模式状态更新工具
+6) 之后再引入 MCP（stdio driver）与审批/权限
 
 ### A.7 子流程（Sub-Workflow）支持（v1.2+）
 

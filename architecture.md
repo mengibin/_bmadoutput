@@ -48,7 +48,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 *   **Complexity Level**: HIGH (Hybrid SaaS + Desktop)
 *   **Primary Domain**: Full-Stack (Web Builder + Desktop Runtime)
-*   **Estimated Components**: 
+*   **Estimated Components**:
     *   SaaS: Visual Builder (React Flow), Auth, Package Export
     *   Desktop: Runtime Client, MCP Drivers, State Manager
 
@@ -474,7 +474,7 @@ crewagent-runtime/
 
 ## Runtime Client Detailed Design (v1.1 / Project-First)
 
-> 本节将 `_bmad-output/architecture/runtime-architecture.md`（已移除 Epic/Story 建议）与配套文档的关键结论，合并进架构文档，作为 Runtime 实现时的“权威约束”。  
+> 本节将 `_bmad-output/architecture/runtime-architecture.md`（已移除 Epic/Story 建议）与配套文档的关键结论，合并进架构文档，作为 Runtime 实现时的“权威约束”。
 > `.bmad` 包格式的权威规范见：`_bmad-output/tech-spec.md`。
 
 ### Core Design Principles
@@ -510,7 +510,7 @@ persona 继承硬约束：
 
 ### Runtime Knowledge Base Delta (2026-03)
 
-> 本节是对 Runtime 现有架构的增量约束，覆盖“个人知识库 + 当前项目知识库（本地优先）”的设计边界。  
+> 本节是对 Runtime 现有架构的增量约束，覆盖“个人知识库 + 当前项目知识库（本地优先）”的设计边界。
 > 目标：在不破坏既有对话/工程执行链路的前提下，引入可治理、可检索、可迁移、可清理的知识层。
 
 #### 1) Scope & Mode Boundaries
@@ -614,11 +614,28 @@ persona 继承硬约束：
   - 记录知识导入、检索命中、候选确认、孤儿清理、迁移导入导出事件
   - 可区分 `chat 命中注入` 与 `agent/run 跳过`
 
+### Runtime SDK Wiki and Trusted SDK Tool Governance Delta (2026-05)
+
+> 本节是对 Runtime SDK 集成场景的增量约束，覆盖 SDK Wiki Pack 导入、SDK-aware 内部知识模块，以及 trusted MCP 边界下 SDK execution tools 的治理 metadata 与审计。
+
+核心架构边界：
+
+- SDK Wiki Pack 是 RuntimeStore 的独立版本级知识域，存放在 `sdk-wikis/<sdkId>/<version>/`，不混入 Project KB；
+- SDK Wiki import 只做校验和注册，遇到 schema/index/hash/frontmatter 不兼容时失败，不静默重建索引；
+- SDK Wiki Pack 管理入口放在 Settings，支持目录/压缩包导入、已安装版本列表和确认删除；
+- `sdk_wiki.*` 是 Runtime 内部 tool/context function，不是外部 MCP Server 能力；
+- SDK API 选择、依赖推理和小步计划由 CrewAgent Runtime 主 LLM 完成，SAM MCP Server / SDK Bridge 不调用 LLM 做 SDK 理解；
+- MCP/集成软件负责 SDK execution safety，包括路径范围、破坏性操作策略、求解资源/license guard 和领域确认；
+- Runtime 不基于 SDK risk metadata 做用户确认门禁，只记录 `sdk_tool.requested/metadata_warning/executed/failed` 审计；
+- SDK governance metadata 只能补充可观测性，不能扩权，也不能启用 existing effective tool policy 禁用的工具。
+
 ### Reference Docs (in `_bmad-output/`)
 
 - Runtime 总览：`_bmad-output/architecture/runtime-architecture.md`
 - Runtime Claude Code Skills 增量架构：`_bmad-output/architecture/runtime-claude-code-skills-architecture.md`
 - Runtime Claude Code Skills 增量需求：`_bmad-output/prd-runtime-claude-code-skills.md`
+- Runtime SDK Wiki and Trusted SDK Tool Governance 增量架构：`_bmad-output/architecture/runtime-sdk-wiki-and-tool-risk-architecture.md`
+- Runtime SDK Wiki and Trusted SDK Tool Governance 增量需求：`_bmad-output/prd-runtime-sdk-wiki-and-tool-risk.md`
 - Runtime 知识库增量需求：`_bmad-output/prd-runtime-personal-knowledge-base.md`、`_bmad-output/prd-runtime-project-knowledge-base.md`
 - 多模态数据提取增量架构：`_bmad-output/architecture/runtime-multimodal-data-extraction-architecture.md`
 - 两种入口细化：`_bmad-output/architecture/entrypoints-agent-vs-workflow.md`
