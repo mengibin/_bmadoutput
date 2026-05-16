@@ -175,6 +175,13 @@ development_status:
   14-6-sam-golden-path-and-generic-sdk-adapter-contract: done
   epic-14-retrospective: done
 
+  epic-ccv2: done
+  ccv2-1-1-compression-observability-and-protocol-foundation: done
+  ccv2-1-2-protocol-aware-structural-compression: done
+  ccv2-1-3-llm-summary-and-cross-mode-integration: done
+  ccv2-1-4-active-tool-loop-compression-and-final-fallback: done
+  epic-ccv2-retrospective: done
+
   epic-mde-1: in-progress
   mde-1-1-multimodal-model-configuration-capability-guard: review
   mde-1-2-first-class-media-extract-binary-fallback-policy: done
