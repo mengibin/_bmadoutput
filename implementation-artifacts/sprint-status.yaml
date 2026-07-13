@@ -128,6 +128,7 @@ development_status:
 
   epic-8: in-progress
   8-4-project-data-management: review
+  8-7-runtime-ui-localization-and-language-switching: done
   epic-8-retrospective: optional
 
   epic-9: done

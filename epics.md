@@ -310,6 +310,7 @@ This document provides the complete epic and story breakdown for CrewAgent, deco
 - Performance optimizations
 - UX improvements
 - Quality of life features
+- Runtime UI localization with persisted language switching
 
 ---
 
@@ -1858,6 +1859,79 @@ So that I can leverage Gemini's capabilities for workflow execution.
 | Settings UI | Add Gemini provider option and fields |
 
 **Note:** Gemini supports OpenAI-compatible API format, so may reuse existing `OpenAICompatibleLlmAdapter` with different base URL.
+
+---
+
+### Story 8.7: Runtime UI Localization & Language Switching
+
+As a **Consumer**,
+I want to switch the CrewAgent Runtime interface language,
+So that I can use the application in my preferred language without changing my operating system language.
+
+**Acceptance Criteria:**
+
+**Given** I open Runtime for the first time
+**When** no language preference has been saved
+**Then** the interface follows the operating system language
+**And** resolves supported Chinese locales to `zh-CN`
+**And** falls back to `en-US` for unsupported system locales
+
+**Given** I open Settings → Appearance
+**When** I view the interface language control
+**Then** I can choose `Follow System`, `简体中文`, or `English`
+
+**Given** I select a different interface language
+**When** the selection is applied
+**Then** all mounted first-party Runtime UI updates immediately without restarting
+**And** the preference is persisted and restored before the next meaningful render
+
+**Given** I navigate across first-party Runtime surfaces
+**When** the selected locale is active
+**Then** navigation, page titles, settings, buttons, form labels, placeholders, empty states, dialogs, toasts, status text, validation messages, and accessibility labels use that locale
+**And** dates, times, numbers, and pluralized text use locale-aware formatting
+
+**Given** user-authored or package-authored content is displayed
+**When** the interface language changes
+**Then** chat messages, LLM responses, workflow/agent/package names, artifacts, file content, code, logs, and tool payloads remain unchanged
+
+**Given** Electron Main or a Runtime backend service encounters a known application error
+**When** the error is returned through IPC or displayed to the user
+**Then** its user-facing summary, reason, and actionable guidance are available in both `zh-CN` and `en-US`
+**And** the message follows the currently effective interface language
+**And** the error uses a stable code/key plus interpolation parameters instead of a hard-coded English sentence
+**And** stack traces, third-party stderr, and raw diagnostic details remain available unchanged for troubleshooting
+
+**Given** a translation key is missing or a locale resource fails to load
+**When** the affected UI renders
+**Then** Runtime falls back to `en-US` without crashing
+**And** does not display raw translation keys to the user in production
+
+**Given** a developer adds or changes user-visible first-party text
+**When** automated checks run
+**Then** locale resources are validated for matching keys
+**And** tests cover system-locale resolution, saved preference restoration, live switching, fallback behavior, and representative core screens
+
+**Implementation Notes:**
+
+| Component | Change |
+|:----------|:-------|
+| i18n foundation | Add typed/structured `zh-CN` and `en-US` locale resources with fallback and interpolation support |
+| `RuntimeSettings` | Add `uiLanguage: 'system' \| 'zh-CN' \| 'en-US'` with backward-compatible default |
+| `appStore` | Resolve effective locale, persist preference, and expose live language switching |
+| Settings → Appearance | Add an interface-language selector |
+| Runtime UI | Replace first-party hard-coded display strings with translation keys |
+| Formatting | Centralize locale-aware date, time, number, and plural formatting |
+| Main/backend errors | Add shared bilingual error contracts and catalogs for application-owned user-facing errors |
+| Error presentation | Resolve stable application error codes/keys using the effective locale while preserving raw diagnostic details |
+
+**Scope Boundary:**
+
+- The only languages required for this story are Simplified Chinese (`zh-CN`) and English (`en-US`).
+- Application-owned Electron dialogs and messages are in scope; operating-system-owned file picker text is controlled by the OS.
+- Internal identifiers, persisted enum values, IPC channel names, tool names, audit data, and protocol payloads must remain language-neutral and stable.
+- Changing UI language must not instruct the LLM to change response language. LLM response-language preference is a separate concern.
+
+> 详细规格见：`_bmad-output/implementation-artifacts/8-7-runtime-ui-localization-and-language-switching.md`
 
 ---
 
