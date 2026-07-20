@@ -1148,6 +1148,33 @@ So that I can verify generated artifacts, edit configurations, and organize work
 
 ---
 
+### Story 5.21: Collapsible Workspace Context Panels
+
+As a **Consumer**,
+I want to hide and reopen the Files, Knowledge, and Works context panels,
+So that I can maximize the main workspace without losing my current panel context.
+
+**Acceptance Criteria:**
+
+**Given** I am on Files, Knowledge, or Works
+**When** I collapse the context panel
+**Then** the main workspace expands and a compact restore control remains available
+**And** reopening restores the same mounted panel state.
+
+**Given** a context panel is hidden
+**When** I navigate to another context-panel route
+**Then** the destination panel opens by default.
+
+**Given** I use keyboard navigation, Simplified Chinese, English, or a narrow window
+**When** I operate the panel control
+**Then** it remains accessible, localized, and aligned with the panel boundary.
+
+**Dependencies**
+- Story 5.0 (UI Shell & Navigation)
+- Story 5.10 (Files Page / shared Workspace panel foundation)
+
+---
+
 ### Story 5.1: View Current Workflow State
 
 As a **Consumer**,
